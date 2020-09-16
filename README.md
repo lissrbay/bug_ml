@@ -1,8 +1,9 @@
 ## Changed Methods Finder (test task)
 
 This script finds changed methods between two last commits in local repository.
-To run the script, type python get_java_methods.py "<path or nothing>"
+To run the script, type python get_java_methods.py "path or nothing"
 All changed methods will be printed and marked as "changed", "deleted" or "added".
+
 Some not obvious rules:
 1. If name of the class, where method is, have been changed - old and new methods are marked as "deleted" and "added".
 2. If name of the method have been changed -  old and new methods are marked as "deleted" and "added".
