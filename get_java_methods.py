@@ -1,10 +1,10 @@
 # This script finds changed methods between two last commits in local repository.
-# To run the script, type python get_java_methods.py <path or nothing>
-
+# To run the script, type python get_java_methods.py "<path or nothing>"
 from git import Repo, db
 import os.path
 import re
 import sys
+from java_parser import JavaParser
 
 
 class ChangedMethodsFinder:
@@ -17,6 +17,8 @@ class ChangedMethodsFinder:
         self.repo = None
         self.path = path
         self.changed_methods = []
+        self.code_a = ''
+        self.code_b = ''
 
 
     def collect_code_from_commit(self, diff_files, commit_step):
@@ -30,9 +32,8 @@ class ChangedMethodsFinder:
 
     def collect_code_last_two_commits(self):
         diff_files = self.repo.git.diff('HEAD~1..HEAD', name_only=True)
-        code_a = self.collect_code_from_commit(diff_files, "HEAD")
-        code_b = self.collect_code_from_commit(diff_files, "HEAD~1")
-        return code_a, code_b
+        self.code_a = self.collect_code_from_commit(diff_files, "HEAD")
+        self.code_b = self.collect_code_from_commit(diff_files, "HEAD~1")
 
 
     def remove_tabs(self, code):
@@ -46,40 +47,6 @@ class ChangedMethodsFinder:
         return classes, methods, methods_names
 
 
-    def collect_method_info(self, code):
-        classes, methods, methods_names = self.parse_code(code)
-        sts = sorted(classes.keys())
-        st = 0
-        methods_info = {}
-        for i, m in enumerate(methods):
-            while m[0] > sts[st] and st + 1 < len(sts):
-                st += 1
-            full_name = classes[sts[st]] +': ' + methods_names[i]
-            methods_info[full_name] =  (methods_names[i], m[2])
-        return methods_info
-
-
-    def find_difference(self, methods_info_a, methods_info_b):
-        all_methods = list(methods_info_a.keys()) + list(methods_info_b.keys())
-        changed_methods = set()
-
-        for method in all_methods:
-            if method in methods_info_a:
-                method_name_a = methods_info_a[method][0]
-                if method in methods_info_b:
-                    method_code_a = methods_info_a[method][1]
-                    method_code_b = methods_info_b[method][1]
-                    if method_code_a != method_code_b:
-                        changed_methods.add(method_name_a + " - changed")
-                else:
-                    changed_methods.add(method_name_a + " - added")
-            else:
-                method_name_b = methods_info_b[method][0]
-                changed_methods.add(method_name_b + " - deleted")
-
-        return changed_methods
-
-
     def open_repo(self, path='.'):
         try:
             self.repo = Repo(path, odbt=db.GitDB)
@@ -87,16 +54,41 @@ class ChangedMethodsFinder:
             print("Check path to repository. Maybe, you should write path in double quotes\"\"")
 
 
+    def code_fragment(self, bounds, code):
+        return ''.join(code)[bounds[0]: bounds[1]]
+
+
+    def get_method_info(self, ast):
+        methods_info = ast.get_method_names_and_bounds()
+        methods_info = dict(methods_info)
+
+        return methods_info
+
+
+    def compare_ast(self, ast_a, ast_b):
+        methods_info_a = self.get_method_info(ast_a)
+        methods_info_b = self.get_method_info(ast_b)
+        all_methods = list(methods_info_a.keys()) + list(methods_info_b.keys())
+        changed_methods = set()
+
+        for method in all_methods:
+            if method in methods_info_a and method in methods_info_b:
+                method_code_a = self.code_fragment(methods_info_a[method], self.code_a)
+                method_code_b = self.code_fragment(methods_info_b[method], self.code_b)
+                if method_code_a != method_code_b:
+                    changed_methods.add(method + " - changed")
+
+        return changed_methods
+
 
     def find_changed_methods(self, path='.'):
         self.open_repo(path)
-        code_a, code_b = self.collect_code_last_two_commits()
-        code_b = self.remove_tabs(code_b)
-        code_a = self.remove_tabs(code_a)
-        methods_info_a = self.collect_method_info(code_a)
-        methods_info_b = self.collect_method_info(code_b)
-        self.changed_methods = self.find_difference(methods_info_a, methods_info_b)
-        return self.find_difference(methods_info_a, methods_info_b)
+        self.collect_code_last_two_commits()
+        jp = JavaParser()
+        ast_a = jp.parse(self.code_a)
+        ast_b = jp.parse(self.code_b)
+
+        return self.compare_ast(ast_a, ast_b)
 
 
 if __name__ == "__main__":
