@@ -4,7 +4,7 @@ from git import Repo, db
 import os.path
 import re
 import sys
-from java_parser import JavaParser
+from parser_java_kotlin import Parser
 
 
 class ChangedMethodsFinder:
@@ -84,9 +84,9 @@ class ChangedMethodsFinder:
     def find_changed_methods(self, path='.'):
         self.open_repo(path)
         self.collect_code_last_two_commits()
-        jp = JavaParser()
-        ast_a = jp.parse(self.code_a)
-        ast_b = jp.parse(self.code_b)
+        parser = Parser()
+        ast_a = parser.parse(self.code_a)
+        ast_b = parser.parse(self.code_b)
 
         return self.compare_ast(ast_a, ast_b)
 

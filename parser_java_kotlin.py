@@ -46,23 +46,29 @@ class AST:
         return paths
 
 
-class JavaParser:
-    pattern_method_name = re.compile('(?:(?:public|private|protected|static|final|native|synchronized|abstract|transient)+\s+)+[$_\w<>\[\]\s]*\s+[\$_\w]+\([^\)]*\)?\s*?')
-    pattern_constructor_name = re.compile("(?:public|protected|private|static)\s*\w+[\(.*?\)]+\s")
-    pattern_class = re.compile("(?:public|protected|private|static)\s+(?:class|interface)\s+\w+\s")
-    pattern_static = re.compile("(static)\s+\{")
-    declaration_patterns = [pattern_method_name,
-                            pattern_constructor_name,
-                            pattern_class,
-                            pattern_static]
+class Parser:
+    kotlin_patterns = {
+    'pattern_method_name' : re.compile('(?:public|private|protected|static|final|native|synchronized|abstract|transient)* *(fun)+[$_\w<>\[\]\s]*\s+[\$_\w]+\([^\)]*\)?\s*?'),
+    'pattern_constructor_name' : re.compile("(init|constructor)+ *\([^\)]*\)?"),
+    'pattern_class' : re.compile("(?:public|protected|private|static)? *(?:class|object|interface)\s+\w+\s"),
+    'pattern_static' : re.compile("(companion object ) *\{")}
+    java_patterns = {
+        'pattern_method_name' : re.compile('(?:(?:public|private|protected|static|final|native|synchronized|abstract|transient)+\s+)+[$_\w<>\[\]\s]*\s+[\$_\w]+\([^\)]*\)?\s*?'),
+    'pattern_constructor_name' : re.compile("(?:public|protected|private|static)\s*\w+[\(.*?\)]+\s"),
+    'pattern_class' : re.compile("(?:public|protected|private|static)? *(?:class|interface)\s+\w+\s"),
+    'pattern_static' : re.compile("(static)\s+\{")}
+    declaration_patterns = []
 
 
-    def __init__(self):
+    def __init__(self, lang='java'):
         self.brackets_positions = []
         self.labels = []
         self.declaration_types = ['method', 'constructor', 'class', 'static_init']
         self.brackets_positions = []
-
+        if lang == 'java':
+            self.declaration_patterns = self.java_patterns.values()
+        elif lang == 'kotlin':
+            self.declaration_patterns = self.kotlin_patterns.values()
 
     def parse(self, txt):
         txt = self.remove_tabs(txt)
@@ -76,7 +82,6 @@ class JavaParser:
         self.fill_spaces()
 
         ast = self.construct_ast(curr_position = 0)
-        ast = ast.children[0]
         return ast
 
 
@@ -140,7 +145,7 @@ class JavaParser:
             declarations = self.find_declarations_by_pattern(declaration_pattern, code, type)
             if declarations:
                 if type == 'static_init':
-                    declarations = [('static', type, info[2]-(len(info[0])-6)) for info in declarations]
+                    declarations = [('companion object', type, info[2]-(len(info[0])-6)) for info in declarations]
                 all_declarations.extend(declarations)
 
         all_declarations.sort(key=lambda x: x[2])
@@ -159,6 +164,6 @@ class JavaParser:
 
 
 if __name__ == "__main__":
-    jp = JavaParser()
-    f = open("C:\\Users\\lissrbay\\Desktop\\bugml\\uni_proj\\src\\com\\nyancake\\pack_2\\FNV.java", 'r')
-    print(jp.parse(f.readlines()))
+    kp = Parser(lang='kotlin')
+    f = open("C:\\Users\\lissrbay\\Desktop\\bugml\\uni_proj\\kotlin_ex.kt", 'r')
+    print(kp.parse(f.readlines()))
