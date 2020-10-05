@@ -1,7 +1,7 @@
 import os.path
 import re
 import sys
-
+import random
 
 class AST:
     def __init__(self, label='', children = [], value = ''):
@@ -22,12 +22,12 @@ class AST:
 
     def get_method_names_and_bounds(self):
         paths = self.paths()
-        method_names_and_bounds = []
+        method_names_and_bounds = set()
         for path in paths:
             full_name = ': '.join([i[0] for i in path])
             bounds = path[-1][1]
-            method_names_and_bounds.append((full_name, bounds))
-        return method_names_and_bounds
+            method_names_and_bounds.add((full_name, bounds))
+        return list(method_names_and_bounds)
 
 
     def paths(self, node=None, path=None):
@@ -48,30 +48,30 @@ class AST:
 
 class Parser:
     kotlin_patterns = {
-    'pattern_method_name' : re.compile('(?:public|private|protected|static|final|native|synchronized|abstract|transient)* *(fun)+[$_\w<>\[\]\s]*\s+[\$_\w]+\([^\)]*\)?\s*?'),
-    'pattern_constructor_name' : re.compile("(init|constructor)+ *\([^\)]*\)?"),
-    'pattern_class' : re.compile("(?:public|protected|private|static)? *(?:class|object|interface)\s+\w+\s"),
-    'pattern_static' : re.compile("(companion object ) *\{")}
+        'pattern_method_name' : re.compile('(?:override|internal|public|private|protected|static|final|native|synchronized|abstract|transient)* *(fun)+[$_\w<>\[\]\s]*\s+[\$_\w]+\([^\)]*\)?\s*?'),
+        'pattern_constructor_name' : re.compile("(init|constructor)+ *(\([^\)]*\))?"),
+        'pattern_class' : re.compile("(?:open|public|protected|private|static)? *(?:class|object|interface)\s+\w+"),
+        'pattern_static' : re.compile("(companion object ) *\{")}
     java_patterns = {
         'pattern_method_name' : re.compile('(?:(?:public|private|protected|static|final|native|synchronized|abstract|transient)+\s+)+[$_\w<>\[\]\s]*\s+[\$_\w]+\([^\)]*\)?\s*?'),
-    'pattern_constructor_name' : re.compile("(?:public|protected|private|static)\s*\w+[\(.*?\)]+\s"),
-    'pattern_class' : re.compile("(?:public|protected|private|static)? *(?:class|interface)\s+\w+\s"),
-    'pattern_static' : re.compile("(static)\s+\{")}
+        'pattern_constructor_name' : re.compile("(?:public|protected|private|static)\s*\w+[\(.*?\)]+\s"),
+        'pattern_class' : re.compile("(?:public|protected|private|static)? *(?:class|interface)\s+\w+\s"),
+        'pattern_static' : re.compile("(static)\s+\{")}
     declaration_patterns = []
 
 
-    def __init__(self, lang='java'):
+    def __init__(self, language='java'):
         self.brackets_positions = []
         self.labels = []
         self.declaration_types = ['method', 'constructor', 'class', 'static_init']
         self.brackets_positions = []
-        if lang == 'java':
+        if language == 'java':
             self.declaration_patterns = self.java_patterns.values()
-        elif lang == 'kotlin':
+        elif language == 'kotlin':
             self.declaration_patterns = self.kotlin_patterns.values()
 
     def parse(self, txt):
-        txt = self.remove_tabs(txt)
+        #txt = self.remove_tabs(txt)
 
         self.brackets_positions.clear()
         self.labels.clear()
@@ -82,6 +82,7 @@ class Parser:
         self.fill_spaces()
 
         ast = self.construct_ast(curr_position = 0)
+
         return ast
 
 
@@ -145,7 +146,7 @@ class Parser:
             declarations = self.find_declarations_by_pattern(declaration_pattern, code, type)
             if declarations:
                 if type == 'static_init':
-                    declarations = [('companion object', type, info[2]-(len(info[0])-6)) for info in declarations]
+                    declarations = [('static', type, info[2]-(len(info[0])-6)) for info in declarations]
                 all_declarations.extend(declarations)
 
         all_declarations.sort(key=lambda x: x[2])
@@ -158,12 +159,12 @@ class Parser:
 
 
     def remove_tabs(self, code):
-        code = ''.join(code)
+        code = '\n'.join(code)
         code = re.sub(' +', ' ', code)
         return re.sub('\t+', '', code)
 
 
 if __name__ == "__main__":
-    kp = Parser(lang='kotlin')
-    f = open("C:\\Users\\lissrbay\\Desktop\\bugml\\uni_proj\\kotlin_ex.kt", 'r')
+    kp = Parser(language='kotlin')
+    f = open("C:\\Users\\lissrbay\\Desktop\\bugml\\ex.kt", 'r')
     print(kp.parse(f.readlines()))
