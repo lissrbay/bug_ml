@@ -26,7 +26,8 @@ class AST:
         for path in paths:
             full_name = ': '.join([i[0] for i in path])
             bounds = path[-1][1]
-            method_names_and_bounds.add((full_name, bounds))
+            if path[-1][2] in ['method', 'constructor', 'static_init']:
+                method_names_and_bounds.add((full_name, (bounds, path[-1][2])))
         return list(method_names_and_bounds)
 
 
@@ -37,7 +38,7 @@ class AST:
         if path is None:
             path = []
         if node.type != 'code':
-            path.append((node.label, node.bounds))
+            path.append((node.label, node.bounds, node.type))
         if node.children:
             for child in node.children:
                 paths.extend(self.paths(child, path[:]))
@@ -70,7 +71,7 @@ class Parser:
         elif language == 'kotlin':
             self.declaration_patterns = self.kotlin_patterns.values()
 
-    def parse(self, txt):
+    def parse(self, txt, filename=''):
         #txt = self.remove_tabs(txt)
 
         self.brackets_positions.clear()
@@ -82,7 +83,8 @@ class Parser:
         self.fill_spaces()
 
         ast = self.construct_ast(curr_position = 0)
-
+        ast.label = filename
+        ast.type = 'file'
         return ast
 
 
