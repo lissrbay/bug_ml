@@ -7,7 +7,8 @@ import re
 import sys
 import glob
 from parser_java_kotlin import Parser
-
+from pathlib import Path
+from tqdm import tqdm
 
 class ChangedMethodsFinder:
     file_extension = {'java': '.*.java', 'kotlin':'.*.kt'}
@@ -21,19 +22,22 @@ class ChangedMethodsFinder:
 
     def collect_code_from_commit(self, diff_files, commit_step, extension='.*.java'):
         code = []
-        for diff_file in diff_files:
-            for commit, code_lines in self.repo.blame(commit_step, diff_file):
-                    code.extend(code_lines)
+        for diff_file in tqdm(diff_files):
+            code.extend(self.repo.git.show('{}:{}'.format(commit_step, diff_file)).split('\n'))
+
         return code
 
 
     def collect_code_last_two_commits(self, extension='.*.java', commits = ["HEAD", "HEAD~1"]):
-        #diff_files = self.repo.git.diff('HEAD~1..HEAD', name_only=True)
-        diff_files = self.repo.git.diff(commits[0], commits[1], name_only=True)
-        diff_files = [f for f in diff_files.split('\n') if re.match(extension, f)]
-        print(diff_files, commits)
+        commit_dev = self.repo.commit(commits[0])
+        commit_origin_dev = self.repo.commit(commits[1])
+        diff_index = commit_origin_dev.diff(commit_dev)
+        diff_files = []
+        for diff_item in diff_index.iter_change_type('M'):
+            diff_files.append(diff_item.a_path)
         self.code_a = self.collect_code_from_commit(diff_files, commits[0], extension)
         self.code_b = self.collect_code_from_commit(diff_files, commits[1], extension)
+        print("collected")
 
 
     def remove_tabs(self, code):
@@ -78,10 +82,10 @@ class ChangedMethodsFinder:
 
         for method in all_methods:
             if method in methods_info_a and method in methods_info_b:
-                method_code_a = self.code_fragment(methods_info_a[method], self.code_a)
-                method_code_b = self.code_fragment(methods_info_b[method], self.code_b)
+                method_code_a = self.code_fragment(methods_info_a[method][0], self.code_a)
+                method_code_b = self.code_fragment(methods_info_b[method][0], self.code_b)
                 if method_code_a != method_code_b:
-                    changed_methods.add(method)
+                    changed_methods.add((method, methods_info_a[method][1]))
 
         return changed_methods
 
@@ -110,7 +114,7 @@ if __name__ == "__main__":
             path = sys.argv[1]
             path = path.replace("\\", "/")
     cmf = ChangedMethodsFinder()
-    #commits = ['8b5304787d3a869397a45ab9f355b29d31aabd6c','c24ccb312382238ee9fc3198c7851b16d19c9563']
-    #print(cmf.find_changed_methods(path, commits))
+    commits = ['8b5304787d3a869397a45ab9f355b29d31aabd6c','c24ccb312382238ee9fc3198c7851b16d19c9563']
+    print(cmf.find_changed_methods(path, commits))
     print(cmf.find_changed_methods(path))
 
