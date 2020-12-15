@@ -3,6 +3,7 @@ import json
 import os
 from tqdm import tqdm
 import re
+import sys
 from add_path_info import load_report
 path = "C:\\Users\\lissrbay\\Desktop\\bugml\\intellij"
 
@@ -25,7 +26,7 @@ def get_file_by_commit(repo, commit, diff_file):
 
 def create_subfolder(path):
     try:
-        os.mkdir(full_save_path)
+        os.mkdir(path)
     except Exception:
         pass
 
@@ -40,7 +41,7 @@ def is_labeled_inside_window(report, file_limit):
     return flag
 
 
-def get_sources_for_report(report, commit, file_limit):
+def get_sources_for_report(report, commit, full_save_path, file_limit):
     for i, frame in enumerate(report['frames']):
         if i == file_limit:
             break
@@ -67,7 +68,7 @@ def collect_sources_for_reports(repo, save_path, path_to_reports, file_limit=80)
             flag = is_labeled_inside_window(report, file_limit)
             if not flag:
                 continue
-            get_sources_for_report(report, commit, file_limit)
+            get_sources_for_report(report, commit, full_save_path, file_limit)
 
 
 
@@ -77,7 +78,7 @@ if __name__ == "__main__":
     path_to_reports = "//labeled_reports"
     save_path = "//labeled_reports"
     if len(sys.argv) > 1:
-        files_limit = sys.argv[1]
+        file_limit = sys.argv[1]
         collect_sources_for_reports(repo, save_path, path_to_reports, file_limit)
     else:
         collect_sources_for_reports(repo, save_path, path_to_reports)
