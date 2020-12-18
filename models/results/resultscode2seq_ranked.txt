@@ -1,0 +1,182 @@
+[
+    {
+        "train_acc": 0.30258413461538464,
+        "val_acc": 0.2672109962406015,
+        "lr": "0.01",
+        "epoch": "20",
+        "optim": "<class 'torch.optim.adam.Adam'>",
+        "anneal_coef": "0.25",
+        "anneal_epoch": "10",
+        "dim": "80"
+    },
+    {
+        "train_acc": 0.2938701923076923,
+        "val_acc": 0.26358865914786966,
+        "lr": "0.001",
+        "epoch": "20",
+        "optim": "<class 'torch.optim.adam.Adam'>",
+        "anneal_coef": "0.25",
+        "anneal_epoch": "5",
+        "dim": "80"
+    },
+    {
+        "train_acc": 0.2585136217948718,
+        "val_acc": 0.23543233082706766,
+        "lr": "0.01",
+        "epoch": "20",
+        "optim": "<class 'torch.optim.adam.Adam'>",
+        "anneal_coef": "0.25",
+        "anneal_epoch": "5",
+        "dim": "60"
+    },
+    {
+        "train_acc": 0.22876602564102566,
+        "val_acc": 0.209468984962406,
+        "lr": "0.001",
+        "epoch": "20",
+        "optim": "<class 'torch.optim.adam.Adam'>",
+        "anneal_coef": "0.25",
+        "anneal_epoch": "10",
+        "dim": "40"
+    },
+    {
+        "train_acc": 0.24168669871794873,
+        "val_acc": 0.2035949248120301,
+        "lr": "0.001",
+        "epoch": "20",
+        "optim": "<class 'torch.optim.adam.Adam'>",
+        "anneal_coef": "0.25",
+        "anneal_epoch": "5",
+        "dim": "60"
+    },
+    {
+        "train_acc": 0.17487980769230768,
+        "val_acc": 0.1612233709273183,
+        "lr": "0.01",
+        "epoch": "20",
+        "optim": "<class 'torch.optim.adam.Adam'>",
+        "anneal_coef": "0.25",
+        "anneal_epoch": "5",
+        "dim": "40"
+    },
+    {
+        "train_acc": 0.14523237179487178,
+        "val_acc": 0.12940554511278196,
+        "lr": "0.01",
+        "epoch": "20",
+        "optim": "<class 'torch.optim.adam.Adam'>",
+        "anneal_coef": "0.25",
+        "anneal_epoch": "15",
+        "dim": "80"
+    },
+    {
+        "train_acc": 0.07892628205128206,
+        "val_acc": 0.08172775689223058,
+        "lr": "0.01",
+        "epoch": "20",
+        "optim": "<class 'torch.optim.adam.Adam'>",
+        "anneal_coef": "0.25",
+        "anneal_epoch": "5",
+        "dim": "80"
+    },
+    {
+        "train_acc": 0.04927884615384615,
+        "val_acc": 0.03569470551378446,
+        "lr": "0.001",
+        "epoch": "20",
+        "optim": "<class 'torch.optim.adam.Adam'>",
+        "anneal_coef": "0.25",
+        "anneal_epoch": "15",
+        "dim": "80"
+    },
+    {
+        "train_acc": 0.022736378205128208,
+        "val_acc": 0.03234649122807017,
+        "lr": "0.01",
+        "epoch": "20",
+        "optim": "<class 'torch.optim.adam.Adam'>",
+        "anneal_coef": "0.25",
+        "anneal_epoch": "10",
+        "dim": "40"
+    },
+    {
+        "train_acc": 0.01282051282051282,
+        "val_acc": 0.019521459899749374,
+        "lr": "0.001",
+        "epoch": "20",
+        "optim": "<class 'torch.optim.adam.Adam'>",
+        "anneal_coef": "0.25",
+        "anneal_epoch": "10",
+        "dim": "80"
+    },
+    {
+        "train_acc": 0.010817307692307692,
+        "val_acc": 0.011160714285714286,
+        "lr": "0.001",
+        "epoch": "20",
+        "optim": "<class 'torch.optim.adam.Adam'>",
+        "anneal_coef": "0.25",
+        "anneal_epoch": "10",
+        "dim": "60"
+    },
+    {
+        "train_acc": 0.0015024038461538462,
+        "val_acc": 0.0036223370927318294,
+        "lr": "0.01",
+        "epoch": "20",
+        "optim": "<class 'torch.optim.adam.Adam'>",
+        "anneal_coef": "0.25",
+        "anneal_epoch": "10",
+        "dim": "60"
+    },
+    {
+        "train_acc": 0.002704326923076923,
+        "val_acc": 0.0036223370927318294,
+        "lr": "0.001",
+        "epoch": "20",
+        "optim": "<class 'torch.optim.adam.Adam'>",
+        "anneal_coef": "0.25",
+        "anneal_epoch": "5",
+        "dim": "40"
+    },
+    {
+        "train_acc": 0.0006009615384615385,
+        "val_acc": 0.0011160714285714285,
+        "lr": "0.01",
+        "epoch": "20",
+        "optim": "<class 'torch.optim.adam.Adam'>",
+        "anneal_coef": "0.25",
+        "anneal_epoch": "15",
+        "dim": "40"
+    },
+    {
+        "train_acc": 0.00030048076923076925,
+        "val_acc": 0.0,
+        "lr": "0.01",
+        "epoch": "20",
+        "optim": "<class 'torch.optim.adam.Adam'>",
+        "anneal_coef": "0.25",
+        "anneal_epoch": "15",
+        "dim": "60"
+    },
+    {
+        "train_acc": 0.00030048076923076925,
+        "val_acc": 0.0,
+        "lr": "0.001",
+        "epoch": "20",
+        "optim": "<class 'torch.optim.adam.Adam'>",
+        "anneal_coef": "0.25",
+        "anneal_epoch": "15",
+        "dim": "40"
+    },
+    {
+        "train_acc": 0.0,
+        "val_acc": 0.0,
+        "lr": "0.001",
+        "epoch": "20",
+        "optim": "<class 'torch.optim.adam.Adam'>",
+        "anneal_coef": "0.25",
+        "anneal_epoch": "15",
+        "dim": "60"
+    }
+]
