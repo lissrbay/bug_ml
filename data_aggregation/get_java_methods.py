@@ -6,7 +6,7 @@ import os.path
 import re
 import sys
 import glob
-from parser.parser_java_kotlin import Parser
+from parser_java_kotlin import Parser
 from pathlib import Path
 from tqdm import tqdm
 

@@ -1,22 +1,22 @@
-## Changed Methods Finder (test task)
+## Bug Localization Model
 
-This script finds changed methods between two last commits in local repository.
-To run the script, type python get_java_methods.py "path or nothing"
-All changed methods will be printed and marked as "changed", "deleted" or "added".
+Структура проекта:
 
-Some not obvious rules:
-1. If name of the class, where method is, have been changed - old and new methods are marked as "deleted" and "added".
-2. If name of the method have been changed -  old and new methods are marked as "deleted" and "added".
-
-### Example
-For my local clone of [repository](https://github.com/lissrbay/uni_proj) located in C:\Users\lissrbay\Desktop\bugml\uni_proj, we can run script by command:
-
-python get_java_methods.py "C:\Users\lissrbay\Desktop\bugml\uni_proj"
-
-Result:
-
-{'public static int hash32(int sum, final String string) - changed', 'public static string hash32(int sum, final String string) - deleted'}
-
+- В папке data_aggregation/ лежат скрипты, использовавшиеся для сбора и обработки данных.
+    - parser_java_kotlin.py, get_all_changed_methods.py, get_java_methods.py - находят изменившиеся методы в заданном коммите при помощи парсинга файлов в текущем и предыдущем коммите
+    - add_path_info.py, match_reports_fixes.py, collect_sources.py - дополняют существующие стеки вызовов разметкой, путями до файлов с кодом и подтягивают актуальные на момент коммита файлы с методами
+    - add_w2v_embeddings.py - добавляем эмбеддинги code2vec на основании имени метода
+- В папке embeddings/ содержатся файлы, добавляя которые к копии репозитория code2vec/code2seq можно получить соответствующие эмбеддинги при запуске по соответствующей инструкции к репозиториям
+    - match_embeddings_with_methods.py - соединяет полученные эмбеддинги и информацию о стеках вызовов в единую структуру
+- В папке models/ находятся различные модели, полученные в ходе экспериментов. 
+    - baseline.py - наивный бейзлайн - виноват всегда верхний метод в стеке
+    - train_model.py - необходим для обучения выбранной модели. В качестве параметров при запуске необходимо указать
+        - вид используемых эмбеддингов (code2seq/code2vec/code2vec(wv)) для обучения моделей на соответствующих векторных представлениях
+        - rank, если должен использовать RankLoss
+        - flat, если ожидается обучение модели на эмбеддингах вне структуры стектрейсов
+- В папке results/ лежат результаты обучения моделей.
+    
 ### Used libraries
 
 * GitPython==3.1.8
+* PyTorch
