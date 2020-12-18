@@ -119,14 +119,12 @@ def accuracy_val(y_true, y_pred, report_info):
     return (sensitivity + specificity) / 2, fraction, matched_reports / len(report_scores)
 
 
-def do_epoch(model, criterion, data, batch_size, optimizer=None, name=None):
+def do_epoch(model, criterion, data, batch_size, optimizer=None, name=None, top_two=False):
     epoch_loss = 0
     correct_count_balansed = 0
     sum_count_balansed = 0
     correct_count_fraction_ones = 0
-    sum_count_fraction_ones = 0
     correct_count_fraction_zeros = 0
-    sum_count_fraction_zeros = 0
     is_train = not optimizer is None
     name = name or ''
     model.model.train(is_train)

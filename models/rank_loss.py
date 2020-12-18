@@ -40,7 +40,7 @@ def rank_loss(criterion, logits, y):
 
     return loss
 
-def do_epoch(model, criterion, data, batch_size, optimizer=None, name=None):
+def do_epoch(model, criterion, data, batch_size, optimizer=None, name=None, top_two=False):
     epoch_loss = 0
     correct_count = 0
     sum_count = 0

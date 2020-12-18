@@ -4,7 +4,7 @@ from tqdm import tqdm
 import numpy as np
 
 def baseline_accuracy():
-    path_to_report = "C://Users//lissrbay//Desktop//bugml//intellij_fixed_201007//labeled_reports"
+    path_to_report = "labeled_reports"
     c = 0
     frames_count = []
     report_count = 0
@@ -14,7 +14,7 @@ def baseline_accuracy():
                 continue 
             f = open(path_to_report + "//" + file, 'r')
             report = json.load(f)
-            label_pos = 0
+            label_pos = -1
             report_count += 1
             for i, frame in enumerate(report['frames']):
                 if frame['label']:

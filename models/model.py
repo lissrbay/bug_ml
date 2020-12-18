@@ -80,11 +80,10 @@ class LSTMTagger(nn.Module):
         return F.softmax(tag, 1)
 
 
-def do_epoch(model, criterion, data, batch_size, optimizer=None, name=None, top_one=False):
+def do_epoch(model, criterion, data, batch_size, optimizer=None, name=None, top_two=False):
     epoch_loss = 0
     correct_count = 0
     sum_count = 0
-    unknown_emb_accuracy = 0
     is_train = not optimizer is None
     name = name or ''
     
@@ -106,7 +105,7 @@ def do_epoch(model, criterion, data, batch_size, optimizer=None, name=None, top_
                     loss.backward()
                     optimizer.step()
 
-                correct_count_delta, first_occurance_of_code_score = model.accuracy(y_batch, logits, indices, top_one)
+                correct_count_delta, first_occurance_of_code_score = model.accuracy(y_batch, logits, indices, top_two)
                 correct_count +=  correct_count_delta  * batch_size
                 sum_count += batch_size
 
@@ -114,9 +113,9 @@ def do_epoch(model, criterion, data, batch_size, optimizer=None, name=None, top_
                 progress_bar.set_description('{:>5s} Loss = {:.5f}, Accuracy = {:.2%}, Previous code mean = {:.2%}'.format(
                     name, epoch_loss / (i+1), correct_count / sum_count, first_occurance_of_code_score)
                 )
-    if model.embeddings_size == 320 and not is_train:
-        unknown_emb_accuracy = zero_embeddings_data_accuracy(model)
-        print('Unknown embeddings accuracy = {:.2%}'.format(unknown_emb_accuracy))
+    #if model.embeddings_size == 320 and not is_train:
+    #    unknown_emb_accuracy = zero_embeddings_data_accuracy(model)
+    #    print('Unknown embeddings accuracy = {:.2%}'.format(unknown_emb_accuracy))
     return epoch_loss / batches_count, correct_count / sum_count
 
 def bug_probability(y_pred):
@@ -132,7 +131,7 @@ def bug_probability(y_pred):
     return np.array(preds)
 
 def fit(model, criterion, optimizer, train_data, epochs_count=1, batch_size=32,
-        val_data=None, val_batch_size=None, scheduler=None, top_one=False):
+        val_data=None, val_batch_size=None, scheduler=None, top_two=False):
         
     if not val_data is None and val_batch_size is None:
         val_batch_size = batch_size
@@ -141,11 +140,11 @@ def fit(model, criterion, optimizer, train_data, epochs_count=1, batch_size=32,
     for epoch in range(epochs_count):
         name_prefix = '[{} / {}] '.format(epoch + 1, epochs_count)
         train_loss, train_acc = model.do_epoch(model, criterion, train_data, batch_size, 
-        optimizer, name_prefix + 'Train:', top_one)
+        optimizer, name_prefix + 'Train:', top_two)
         
         if not val_data is None:
             val_loss, val_acc = model.do_epoch(model, criterion, val_data, val_batch_size,
-            None, name_prefix + '  Val:', top_one)
+            None, name_prefix + '  Val:', top_two)
         all_train_acc.append(train_acc)
         all_val_acc.append(val_acc)
         if scheduler:
@@ -166,6 +165,12 @@ def zero_embeddings_data_accuracy(model):
 
 
 class BugLocalizationModel():
+    lrs = [1e-2, 1e-3]
+    epochs = [20]
+    anneal_coefs = [0.25]
+    anneal_epochs = [5, 10, 15]
+    hidden_dim = [40, 60, 80]
+    optims = [optim.Adam]
     def __init__(self, embeddings_path='X.npy', labels_path='y.npy',
                        reports_path='report_ids.npy', ranked=False, flat=False):
         self.X, self.y, self.reports_used = read_data(embeddings_path, labels_path, reports_path)
@@ -184,7 +189,8 @@ class BugLocalizationModel():
             self.criterion = nn.CrossEntropyLoss
 
         if flat:
-            self.train_x, self.train_y, self.test_x, self.test_y, self.report_info = flat_model.test_train_split_flat(self.X, self.y)
+            (self.train_x, self.train_y, self.test_x, 
+            self.test_y, self.report_info) = flat_model.test_train_split_flat(self.X, self.y)
             self.do_epoch = flat_model.do_epoch
 
 
@@ -220,23 +226,19 @@ class BugLocalizationModel():
         
 
     def create_list_of_train_hyperparameters(self):
-        lrs = [1e-2, 1e-3, 1e-4]
-        epochs = [20]
-        anneal_coefs = [0.25]
-        anneal_epochs = [5, 10, 15]
-        hidden_dim = [40, 60, 80]
-        optims = [optim.Adam]
-        params = it.product(lrs, epochs, optims, anneal_coefs, anneal_epochs, hidden_dim)
+        params = it.product(self.lrs, self.epochs, self.optims, self.anneal_coefs,
+                            self.anneal_epochs, self.hidden_dim)
         params = map(lambda param: Parameters(*param), params)
         return params
 
 
-    def accuracy(self, y_true, y_pred, indices=[], top_one=False):
+    def accuracy(self, y_true, y_pred, indices=[], top_two=False):
         matched_positions = 0
         first_occurance_of_code = []
         y_pred = bug_probability(y_pred)
         for n in range(y_pred.shape[0]):
-            if (np.argmax(y_pred[n]) == np.argmax(y_true[n])) or (top_one and np.argmax(y_true[n]) == 0):
+            max_preds = y_pred[n].argsort()[-2:][::-1]
+            if (max_preds[0] == np.argmax(y_true[n])) or (top_two and np.argmax(y_true[n]) in list(max_preds)):
                 matched_positions += 1
                 if np.array(indices).size > 0:
                     indice = indices[n]
@@ -252,7 +254,7 @@ class BugLocalizationModel():
         return matched_positions/y_true.shape[0], first_occurance_of_code_score
     
     
-    def train(self, params, model_to_train, top_one=False):
+    def train(self, params, model_to_train, top_two=False):
         self.run_records = []
         self.params = list(self.create_list_of_train_hyperparameters())
         for param in self.params:
@@ -267,7 +269,7 @@ class BugLocalizationModel():
             train_acc, val_acc = fit(self, loss, optimizer, 
                                      train_data=(self.train_x, self.train_y), epochs_count=param.epoch,
                                      batch_size=128, val_data=(self.test_x, self.test_y),
-                                     val_batch_size=128, scheduler=scheduler, top_one=top_one)
+                                     val_batch_size=128, scheduler=scheduler, top_two=top_two)
             if val_acc > self.best_val_acc:
                 self.best_val_acc = val_acc
             self.run_records.append(RunResult(train_acc, val_acc))
