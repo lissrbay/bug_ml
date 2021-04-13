@@ -4,8 +4,7 @@ import os
 from tqdm import tqdm
 import re
 import sys
-from add_path_info import load_report
-path = "C:\\Users\\lissrbay\\Desktop\\bugml\\intellij"
+from add_path_info import load_report, create_subfolder
 
 
 def remove_unused_begin(code):
@@ -24,13 +23,6 @@ def get_file_by_commit(repo, commit, diff_file):
     return remove_unused_begin(code)
 
 
-def create_subfolder(path):
-    try:
-        os.mkdir(path)
-    except Exception:
-        pass
-
-
 def is_labeled_inside_window(report, file_limit):
     flag = 0
     for i, frame in enumerate(report['frames']):
@@ -42,13 +34,13 @@ def is_labeled_inside_window(report, file_limit):
 
 
 def get_sources_for_report(report, commit, full_save_path, file_limit):
-    for i, frame in enumerate(report['frames']):
+    for i, frame in enumerate(report['frames'])[:80]:
         if i == file_limit:
             break
         if frame['path'] != '':
             diff_file = frame['path']
             code = get_file_by_commit(repo, commit+"~1", diff_file)
-            f = open(full_save_path + frame['file_name'], 'w', encoding="utf-8")
+            f = open(os.path.join(full_save_path, frame['file_name']), 'w', encoding="utf-8")
             f.write(code)
             f.close()
 
@@ -58,11 +50,12 @@ def collect_sources_for_reports(repo, save_path, path_to_reports, file_limit=80)
         if not (root == path_to_reports):
             continue
         for file in tqdm(files):
-            report = load_report(path_to_reports + "//" + file)
+            path_to_file = os.path.join(path_to_reports, file)
+            report = load_report(path_to_file)
             commit = report['hash']
             if commit == "":
                 continue
-            full_save_path = save_path + "//" + str(report['id']) + "//"
+            full_save_path = os.path.join(save_path, str(report['id']))
             create_subfolder(full_save_path)
 
             flag = is_labeled_inside_window(report, file_limit)
@@ -73,10 +66,10 @@ def collect_sources_for_reports(repo, save_path, path_to_reports, file_limit=80)
 
 
 if __name__ == "__main__":
-    path = "//intellij"
+    path = os.path.join("..", "intellij")
     repo = Repo(path, odbt=db.GitDB)
-    path_to_reports = "//labeled_reports"
-    save_path = "//labeled_reports"
+    path_to_reports = os.path.join("..", "intellij_fixed_201007", "labeled_reports")
+    save_path = os.path.join("..", "intellij_fixed_201007", "labeled_reports")
     if len(sys.argv) > 1:
         file_limit = sys.argv[1]
         collect_sources_for_reports(repo, save_path, path_to_reports, file_limit)

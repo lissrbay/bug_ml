@@ -25,7 +25,7 @@ class InteractivePredictor:
 
     def predict(self):
         print('Starting file processing...')
-        path_to_report = "labeled_reports"
+        path_to_report = os.path.join("..", "intellij_fixed_201007", "labeled_reports")
         c = 0
         for root, _, files in tqdm(os.walk(path_to_report)):
             if not (root.split('/')[-1]).isnumeric():
@@ -33,7 +33,7 @@ class InteractivePredictor:
             for file in sorted(files):
                 if not file.endswith('.java'):
                     continue
-                input_filename = root + "/" + file
+                input_filename = os.path.join(root,  file)
                 predict_lines, _, method_names = self.path_extractor.extract_paths(input_filename)
                 if not predict_lines:
                     print("oops")

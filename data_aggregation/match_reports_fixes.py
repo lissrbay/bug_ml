@@ -17,7 +17,7 @@ def collect_info():
             path.append(file)
             hashes.append(info['hash'])
 
-    issues_info = pd.read_csv("intellij_fixed_201007//issue_report_ids.csv")
+    issues_info = pd.read_csv(os.path.join("..", "intellij_fixed_201007", "issue_report_ids.csv"))
     issues_info_ = pd.DataFrame({"issue_id" : issues, "fixed_method" : method_names, 'path':path, 'hash' : hashes})
     full = issues_info.set_index("issue_id").join(issues_info_.set_index("issue_id"))
     full = full.dropna()
@@ -56,7 +56,7 @@ def label_frames(report, methods_info):
         fixed_methods.append(info['fixed_method'])
         paths.append(info['path'].split('/')[-1])
     for frame in report['frames']:
-        frame = label_method(frame, fixed_methods,paths)
+        frame = label_frame(frame, fixed_methods, paths)
             
     return report
 
@@ -79,19 +79,20 @@ def label_reports(issues_info, path_to_report):
         if not (root == path_to_report):
             continue
         for file in tqdm(files):
-            report = load_report(path_to_report + "//" + file)
+            path_to_file = os.path.join(path_to_report, file)
+            report = load_report(path_to_file)
             report_id = report['id']
 
             fixed_methods = find_fixed_method_for_report(issues_info, report_id)
             if fixed_methods.shape[0] == 0:
-                label_one_report(report, "", fixed_methods, path_to_report+"//" + file)
+                label_one_report(report, "", fixed_methods, path_to_file)
                 continue
             else:
                 hash = issues_info[issues_info['report_id'] == report_id]['hash'].values[0]
-                label_one_report(report, hash, fixed_methods, path_to_report+"//" + file)
+                label_one_report(report, hash, fixed_methods, path_to_file)
 
 
 if __name__ == "__main__":
     issues_info = collect_info()
-    path_to_report = "//reports"
-    label_reports(issues_info,path_to_report)
+    path_to_reports = os.path.join("..", "intellij_fixed_201007", "reports")
+    label_reports(issues_info, path_to_reports)

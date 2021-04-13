@@ -33,7 +33,7 @@ def process_report(root):
         if method_with_bug == i and not file_with_method:
             break
         if file_with_method:
-            file_with_csv = root + '/' + file_with_method.split('.')[0] + '.csv'
+            file_with_csv = os.path.join(root, file_with_method.split('.')[0] + '.csv')
             if method_with_bug == i and not os.path.exists(file_with_csv):
                 break
             if os.path.exists(file_with_csv):
@@ -87,7 +87,6 @@ def match_embeddings_with_methods(path_to_report):
 
 
 if __name__ == "__main__":
-    embeddings_type_dir = 'code2seq'
     frame_limit = 80
 
     if len(sys.argv) > 1:
@@ -95,7 +94,7 @@ if __name__ == "__main__":
     if len(sys.argv) > 2:
         frame_limit = int(sys.argv[2])
 
-    path_to_report = embeddings_type_dir + "/labeled_reports"
+    path_to_report = os.path.join("..", "intellij_fixed_201007", "labeled_reports")
     data, labels = match_embeddings_with_methods(path_to_report)
     data, target = pad_sequence(data, labels, 80)
     np.save('X(' + embeddings_type_dir + ')', data) 

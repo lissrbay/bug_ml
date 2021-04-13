@@ -3,7 +3,7 @@ import json
 import os
 from tqdm import tqdm
 from git import Repo, db
-
+import sys
 def list_files_in_commit(commit):
     configFiles = repo.git.execute(
         ['git', 'ls-tree', '-r', '--name-only', commit.hexsha]).split()
@@ -36,10 +36,17 @@ def load_report(name):
     f.close()
     return report
 
+def create_subfolder(path):
+    try:
+        os.mkdir(path)
+    except Exception:
+        pass 
+
 def find_file_for_frame(frame, matching_files):
     frame['path'] = ""
     for file_path in matching_files:
-        if path in file_path:
+        #print(frame)
+        if frame['file_name'] in file_path:
             frame['path'] = file_path
             break
         if not 'path' in frame:
@@ -52,33 +59,37 @@ def add_paths_to_report(report, commit_files, file_limit=80):
         if i == file_limit:
             break
         matching_files_for_frame = commit_files[frame['file_name']]
-        frame = find_file_for_frame(frame, matching_files)
+        frame = find_file_for_frame(frame, matching_files_for_frame)
 
     return report
 
 
-def add_paths_to_all_reports(from_repo, path_to_reports, file_limit=80):
+def add_paths_to_all_reports(from_repo, path_to_reports, path_to_reports_save, file_limit=80):
+
     for root, _, files in os.walk(path_to_reports):
         if not (root == path_to_reports):
             continue
         for file in tqdm(files):
-            report = load_report(path_to_reports + "//" + file)
+            path_to_file = os.path.join(path_to_reports, file)
+            report = load_report(path_to_file)
 
             hash = report['hash']
             commit = repo.commit(hash + '~1')
             commit_files = list_files_in_commit(commit)
 
             add_paths_to_report(report, commit_files, file_limit=80)
-            save_report(path_to_reports + "//" + file, report)
+            save_report(os.path.join(path_to_reports_save, file), report)
 
 
 if __name__ == "__main__":
-    path = "//intellij"
+    path = os.path.join("..", "intellij")
     repo = Repo(path, odbt=db.GitDB)
-    path_to_reports = "//labeled_reports"
+    path_to_reports = os.path.join("..", "intellij_fixed_201007", "reports")
+    path_to_reports_save = os.path.join("..", "intellij_fixed_201007", "labeled_reports")
 
+    create_subfolder(path_to_reports_save)
     if len(sys.argv) > 1:
         files_limit = sys.argv[1]
-        add_paths_to_all_reports(repo, path_to_reports, files_limit)
+        add_paths_to_all_reports(repo, path_to_reports, path_to_reports_save, files_limit)
     else:
-        add_paths_to_all_reports(repo, path_to_reports)
+        add_paths_to_all_reports(repo, path_to_reports, path_to_reports_save)
