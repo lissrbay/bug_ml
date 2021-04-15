@@ -24,7 +24,7 @@ class ChangedMethodsFinder:
         try:
             return self.repo.git.show('{}:{}'.format(commit_step, diff_file)).split('\n')
         except Exception:
-            return['rbhrb']
+            return['error']
 
 
     def collect_modified_files_last_two_commits(self, extension='.*.java', commits = ["HEAD", "HEAD~1"]):
@@ -123,7 +123,6 @@ if __name__ == "__main__":
     path = '.'
     if len(sys.argv) > 1:
             path = sys.argv[1]
-            path = path.replace("\\", "/")
     cmf = ChangedMethodsFinder()
     commits = ['f9feab98cf7c85bc0f61415b1ebc6ed91357e502~1','f9feab98cf7c85bc0f61415b1ebc6ed91357e502']
     print(cmf.find_changed_methods(path, commits))

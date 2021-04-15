@@ -1,14 +1,14 @@
 #!/bin/sh
 embeddings_type=$1
-model_type=$2
-
+path_to_intellij=$2
+path_to_reports=$3
 #FILE=./intellij-community
 #if [ ! -d "$FILE" ]; then
 #    git clone https://github.com/JetBrains/intellij-community
 #fi
 
 #echo "Intellij repository collected"
-conda create -n bug_ml -y python=3.6 anaconda tensorflow==1.15 gitpython tqdm
+conda create -n bug_ml -y python=3.6 anaconda tensorflow==1.15 gitpython tqdm 
 conda deactivate
 touch conda_info.txt
 truncate -s 0 conda_info.txt
@@ -19,12 +19,14 @@ path_to_conda=${path_to_conda[4]}
 path_to_python=${path_to_conda}'/envs/bug_ml/bin/python'
 echo 'Path to python: '$path_to_python
 $path_to_python -m pip install rouge
+$path_to_python -m pip install gensim
+
 cd ./data_aggregation
 sudo sh ./collect_fix_commits.sh
-$path_to_python get_all_changed_methods.py
-$path_to_python match_reports_fixes.py
-$path_to_python add_path_info.py
-$path_to_python collect_sources.py
+$path_to_pythonco get_all_changed_methods.py ${path_to_intellij}
+$path_to_python match_reports_fixes.py ${path_to_reports}
+$path_to_python add_path_info.py ${path_to_intellij} ${path_to_reports}
+$path_to_python collect_sources.py ${path_to_intellij} ${path_to_reports} 80
 $path_to_python ./EDA/count_optimal_frames_limit.py
 cd ..
 echo $embeddings_type
@@ -54,6 +56,7 @@ if ["$embeddings_type" == "code2vec"]; then
     $path_to_python code2vec.py --load models/java-large-model/model_iter52.release --predict
     cd ..
 fi
-
-$path_to_python embeddings/match_embeddings_with_methods.py
+mkdir ./data
+$path_to_python embeddings/match_embeddings_with_methods.py ${path_to_intellij} ${path_to_reports} 80
+$path_to_python data_aggregation/add_w2v_embeddings.py ${path_to_intellij} ${path_to_reports} 80
 

@@ -33,8 +33,8 @@ def is_labeled_inside_window(report, file_limit):
     return flag
 
 
-def get_sources_for_report(report, commit, full_save_path, file_limit):
-    for i, frame in enumerate(report['frames'])[:80]:
+def get_sources_for_report(report, commit, full_save_path, file_limit=80):
+    for i, frame in enumerate(report['frames'][:file_limit]):
         if i == file_limit:
             break
         if frame['path'] != '':
@@ -64,14 +64,19 @@ def collect_sources_for_reports(repo, save_path, path_to_reports, file_limit=80)
             get_sources_for_report(report, commit, full_save_path, file_limit)
 
 
-
+PATH_TO_INTELLIJ = os.path.join("..", "intellij-community")
+PATH_TO_REPORTS = os.path.join("..", "intellij_fixed_201007")
+FILES_LIMIT = 80
 if __name__ == "__main__":
-    path = os.path.join("..", "intellij")
+    path = PATH_TO_INTELLIJ
     repo = Repo(path, odbt=db.GitDB)
-    path_to_reports = os.path.join("..", "intellij_fixed_201007", "labeled_reports")
-    save_path = os.path.join("..", "intellij_fixed_201007", "labeled_reports")
+
+    files_limit = FILES_LIMIT
     if len(sys.argv) > 1:
-        file_limit = sys.argv[1]
-        collect_sources_for_reports(repo, save_path, path_to_reports, file_limit)
-    else:
-        collect_sources_for_reports(repo, save_path, path_to_reports)
+        files_limit = sys.argv[3]
+        PATH_TO_INTELLIJ = sys.argv[1]
+        PATH_TO_REPORTS = sys.argv[2]
+    path_to_reports = os.path.join(PATH_TO_REPORTS, "labeled_reports")
+    save_path = os.path.join(PATH_TO_REPORTS, "labeled_reports")
+    create_subfolder(save_path)
+    collect_sources_for_reports(repo, save_path, path_to_reports, files_limit)

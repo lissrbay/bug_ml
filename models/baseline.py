@@ -2,9 +2,10 @@ import json
 import os
 from tqdm import tqdm
 import numpy as np
+import sys
+PATH_TO_REPORTS = os.path.join("..", "intellij_fixed_201007")
 
-def baseline_accuracy():
-    path_to_report = "labeled_reports"
+def baseline_accuracy(path_to_report):
     c = 0
     frames_count = []
     report_count = 0
@@ -24,4 +25,9 @@ def baseline_accuracy():
                 c += 1
     return c / report_count, np.array(frames_count).std()
 
-print(baseline_accuracy())
+if __name__ == "__main__":
+    if len(sys.argv) > 1:
+        PATH_TO_REPORTS = sys.argv[1]
+    path_to_reports = os.path.join(PATH_TO_REPORTS, "labeled_reports")
+
+    print(baseline_accuracy(path_to_reports))

@@ -4,7 +4,7 @@ import numpy as np
 from tqdm import tqdm
 import json
 import sys
-
+import os
 
 def find_closest_vector(model, method_name, embeddings_size=384):
     word_vectors = []
@@ -29,7 +29,7 @@ def clean_method_name(method_name):
 
 
 def find_name_embeddings(X, model, reports_used, embed_all_methods = False, max_frames=80):
-    path_to_report = '/home/lissrbay/Рабочий стол/code2vec/code2vec_experiments/code2seq/labeled_reports'
+    path_to_report = os.path.join('..', 'labeled_reports')
     for n, report_id in tqdm(enumerate(reports_used)):
         f = open(path_to_report + '/' + report_id + '.json', 'r')
         report = json.load(f)
@@ -43,15 +43,15 @@ def find_name_embeddings(X, model, reports_used, embed_all_methods = False, max_
     return X
 
 
-model = gm.KeyedVectors.load_word2vec_format('target_vecs.txt', binary=False)
-X = np.load('X(code2vec).npy')
-y = np.load('y(code2vec).npy')
-reports_used = np.load('report_ids(code2vec).npy')
+model = gm.KeyedVectors.load_word2vec_format(os.path.join('..', 'code2vec', 'models','java14_model','target_vecs.txt'), binary=False)
+X = np.load(os.path.join('..', 'data', 'X(code2vec).npy'))
+y = np.load(os.path.join('..', 'data','y(code2vec).npy'))
+reports_used = np.load(os.path.join('..', 'data','report_ids(code2vec).npy'))
 if len(sys.argv) > 1:
     X = find_name_embeddings(X, model, reports_used, embed_all_methods=True)
-    np.save('X(wv_all)', X)
-    np.save('y(wv_all)', y)
+    np.save(os.path.join('..', 'data','X(wv_all)', X))
+    np.save(os.path.join('..', 'data','y(wv_all)', y))
 else:
     X = find_name_embeddings(X, model, reports_used)
-    np.save('X(wv)', X)
-    np.save('y(wv)', y)
+    np.save(os.path.join('..', 'data','X(wv)', X))
+    np.save(os.path.join('..', 'data','y(wv)', y))

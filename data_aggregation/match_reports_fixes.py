@@ -3,9 +3,9 @@ import json
 import os
 from tqdm import tqdm
 from add_path_info import load_report
+import sys
 
-
-def collect_info():
+def collect_info(path_to_reports):
     f = open("fixed_methods.txt", "r")
     fixed_methods = json.load(f)
 
@@ -17,7 +17,7 @@ def collect_info():
             path.append(file)
             hashes.append(info['hash'])
 
-    issues_info = pd.read_csv(os.path.join("..", "intellij_fixed_201007", "issue_report_ids.csv"))
+    issues_info = pd.read_csv(os.path.join(path_to_reports, "issue_report_ids.csv"))
     issues_info_ = pd.DataFrame({"issue_id" : issues, "fixed_method" : method_names, 'path':path, 'hash' : hashes})
     full = issues_info.set_index("issue_id").join(issues_info_.set_index("issue_id"))
     full = full.dropna()
@@ -91,8 +91,12 @@ def label_reports(issues_info, path_to_report):
                 hash = issues_info[issues_info['report_id'] == report_id]['hash'].values[0]
                 label_one_report(report, hash, fixed_methods, path_to_file)
 
-
+PATH_TO_REPORTS = os.path.join("..", "intellij_fixed_201007")
 if __name__ == "__main__":
-    issues_info = collect_info()
-    path_to_reports = os.path.join("..", "intellij_fixed_201007", "reports")
+    path_to_report = PATH_TO_REPORTS
+    if len(sys.argv) > 1:
+        path_to_report = sys.argv[1]
+
+    path_to_reports = os.path.join(path_to_report, "reports")
+    issues_info = collect_info(path_to_reports)
     label_reports(issues_info, path_to_reports)

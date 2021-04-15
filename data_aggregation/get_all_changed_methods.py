@@ -4,9 +4,9 @@ import re
 from collections import defaultdict
 import json
 import os
-
+import sys
 def get_changed_methods_from_commits(next_commit):
-    path = os.path.join("..", "intellij")
+    path = PATH_TO_INTELLIJ
     cmf = ChangedMethodsFinder()
 
     changed_methods = cmf.find_changed_methods(path, [next_commit + '~1', next_commit])
@@ -67,8 +67,11 @@ def save_results(fix_commit_hashes, fix_issues, changed_methods):
     json.dump(info, f, indent=4)
     f.close()
 
+PATH_TO_INTELLIJ = os.path.join("..", "intellij-community")
 
 if __name__ == "__main__":
+    if len(sys.argv) > 1:
+        PATH_TO_INTELLIJ = sys.argv[1]
     path_to_fix_commits = os.path.join(".", "commit_fix_hashes.txt")
     fix_commits_hashes, fix_issues = get_commits_and_issues(path_to_fix_commits)
     changed_methods = collect_all_changed_methods(fix_commits_hashes, fix_issues)

@@ -85,17 +85,20 @@ def match_embeddings_with_methods(path_to_report):
             labels.append(frames_labels)
     return data, labels
 
+PATH_TO_REPORTS = os.path.join("..", "intellij_fixed_201007")
+FILES_LIMIT = 80
 
 if __name__ == "__main__":
-    frame_limit = 80
-
+    frame_limit = FILES_LIMIT
+    embeddings_type_dir = "code2seq"
+    path_to_report = PATH_TO_REPORTS
     if len(sys.argv) > 1:
-        embeddings_type_dir = sys.argv[1]
-    if len(sys.argv) > 2:
-        frame_limit = int(sys.argv[2])
+        path_to_report = sys.argv[1]
+        embeddings_type_dir = sys.argv[2]
+        frame_limit = int(sys.argv[3])
 
-    path_to_report = os.path.join("..", "intellij_fixed_201007", "labeled_reports")
+    path_to_report = os.path.join(path_to_report, "labeled_reports")
     data, labels = match_embeddings_with_methods(path_to_report)
-    data, target = pad_sequence(data, labels, 80)
-    np.save('X(' + embeddings_type_dir + ')', data) 
-    np.save('y(' + embeddings_type_dir + ')', target) 
+    data, target = pad_sequence(data, labels, frame_limit)
+    np.save(os.path.join("..", "data", 'X(' + embeddings_type_dir + ')'), data) 
+    np.save(os.path.join("..", "data", 'y(' + embeddings_type_dir + ')'), target) 

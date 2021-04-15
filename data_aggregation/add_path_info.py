@@ -80,16 +80,19 @@ def add_paths_to_all_reports(from_repo, path_to_reports, path_to_reports_save, f
             add_paths_to_report(report, commit_files, file_limit=80)
             save_report(os.path.join(path_to_reports_save, file), report)
 
-
+PATH_TO_INTELLIJ = os.path.join("..", "intellij-community")
+PATH_TO_REPORTS = os.path.join("..", "intellij_fixed_201007")
+FILES_LIMIT = 80
 if __name__ == "__main__":
-    path = os.path.join("..", "intellij")
+    path = PATH_TO_INTELLIJ
     repo = Repo(path, odbt=db.GitDB)
-    path_to_reports = os.path.join("..", "intellij_fixed_201007", "reports")
-    path_to_reports_save = os.path.join("..", "intellij_fixed_201007", "labeled_reports")
 
+    files_limit = FILES_LIMIT
     create_subfolder(path_to_reports_save)
     if len(sys.argv) > 1:
-        files_limit = sys.argv[1]
-        add_paths_to_all_reports(repo, path_to_reports, path_to_reports_save, files_limit)
-    else:
-        add_paths_to_all_reports(repo, path_to_reports, path_to_reports_save)
+        files_limit = sys.argv[3]
+        PATH_TO_INTELLIJ = sys.argv[1]
+        PATH_TO_REPORTS = sys.argv[2]
+    path_to_reports = os.path.join(PATH_TO_REPORTS, "reports")
+    path_to_reports_save = os.path.join(PATH_TO_REPORTS, "labeled_reports")
+    add_paths_to_all_reports(repo, path_to_reports, path_to_reports_save, files_limit)
