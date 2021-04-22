@@ -39,7 +39,7 @@ if [[ "$embeddings_type" == "code2seq" ]]; then
     cd $path_to_code2seq
     wget https://s3.amazonaws.com/code2seq/model/java-large/java-large-model.tar.gz
     tar -xvzf java-large-model.tar.gz
-    $path_to_python code2seq.py --load models/java-large-model/model_iter52.release --predict
+    $path_to_python code2seq.py --load models/java-large-model/model_iter52.release --predict --reports ${path_to_reports}
     cd ..
 fi
 
