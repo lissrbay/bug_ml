@@ -26,7 +26,7 @@ class InteractivePredictor:
 
     def predict(self):
         print('Starting file processing...')
-        path_to_report = os.path.join(reports_path, "labeled_reports")
+        path_to_report = os.path.join("..", "labeled_reports_math")
         c = 0
         for root, _, files in tqdm(os.walk(path_to_report)):
             if not (root.split('/')[-1]).isnumeric():
@@ -46,7 +46,7 @@ class InteractivePredictor:
                     method_vectors.append(embedding)
                 df = pd.DataFrame(data=method_vectors)
                 df['method'] = method_names
-                df.to_csv(input_filename.split('.')[0] + '.csv')
-                print(str(c) + " " + input_filename + " - done")
+                df.to_csv(input_filename[:len(input_filename)-5] + '.csv')
+                print( str(c) + " " + input_filename + " - done")
             else:
                 c += 1
