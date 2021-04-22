@@ -33,7 +33,7 @@ def is_labeled_inside_window(report, file_limit):
     return flag
 
 
-def get_sources_for_report(report, commit, full_save_path, file_limit=80):
+def get_sources_for_report(repo, report, commit, full_save_path, file_limit=80):
     for i, frame in enumerate(report['frames'][:file_limit]):
         if i == file_limit:
             break
@@ -61,7 +61,7 @@ def collect_sources_for_reports(repo, save_path, path_to_reports, file_limit=80)
             flag = is_labeled_inside_window(report, file_limit)
             if not flag:
                 continue
-            get_sources_for_report(report, commit, full_save_path, file_limit)
+            get_sources_for_report(repo, report, commit, full_save_path, file_limit)
 
 
 PATH_TO_INTELLIJ = os.path.join("..", "intellij-community")

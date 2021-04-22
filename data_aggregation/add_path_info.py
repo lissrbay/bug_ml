@@ -4,7 +4,7 @@ import os
 from tqdm import tqdm
 from git import Repo, db
 import sys
-def list_files_in_commit(commit):
+def list_files_in_commit(commit, repo):
     configFiles = repo.git.execute(
         ['git', 'ls-tree', '-r', '--name-only', commit.hexsha]).split()
     java_files = defaultdict(list)
@@ -74,8 +74,8 @@ def add_paths_to_all_reports(from_repo, path_to_reports, path_to_reports_save, f
             report = load_report(path_to_file)
 
             hash = report['hash']
-            commit = repo.commit(hash + '~1')
-            commit_files = list_files_in_commit(commit)
+            commit = from_repo.commit(hash + '~1')
+            commit_files = list_files_in_commit(commit, from_repo)
 
             add_paths_to_report(report, commit_files, file_limit=80)
             save_report(os.path.join(path_to_reports_save, file), report)

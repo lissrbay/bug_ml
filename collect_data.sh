@@ -22,8 +22,8 @@ $path_to_python -m pip install rouge
 $path_to_python -m pip install gensim
 
 cd ./data_aggregation
-sudo sh ./collect_fix_commits.sh
-$path_to_pythonco get_all_changed_methods.py ${path_to_intellij}
+sudo sh ./collect_fix_commits.sh ${path_to_intellij}
+$path_to_python get_all_changed_methods.py ${path_to_intellij}
 $path_to_python match_reports_fixes.py ${path_to_reports}
 $path_to_python add_path_info.py ${path_to_intellij} ${path_to_reports}
 $path_to_python collect_sources.py ${path_to_intellij} ${path_to_reports} 80

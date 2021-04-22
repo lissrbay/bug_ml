@@ -12,11 +12,12 @@ EXTRACTION_API = 'JavaExtractor/JPredict/target/JavaExtractor-0.0.1-SNAPSHOT.jar
 class InteractivePredictor:
     exit_keywords = ['exit', 'quit', 'q']
 
-    def __init__(self, config, model):
+    def __init__(self, config, model, reports_path):
         model.predict([])
         self.model = model
         self.config = config
         self.path_extractor = Extractor(config, EXTRACTION_API, self.config.MAX_PATH_LENGTH, max_path_width=2)
+        self.reports_path = reports_path
 
     @staticmethod
     def read_file(input_filename):
@@ -25,7 +26,7 @@ class InteractivePredictor:
 
     def predict(self):
         print('Starting file processing...')
-        path_to_report = os.path.join("..", "intellij_fixed_201007", "labeled_reports")
+        path_to_report = os.path.join(reports_path, "labeled_reports")
         c = 0
         for root, _, files in tqdm(os.walk(path_to_report)):
             if not (root.split('/')[-1]).isnumeric():
