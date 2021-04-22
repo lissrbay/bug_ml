@@ -45,7 +45,7 @@ if __name__ == '__main__':
         print('Precision: ' + str(precision) + ', recall: ' + str(recall) + ', F1: ' + str(f1))
         print('Rouge: ', rouge)
     if args.predict:
-        predictor = InteractivePredictor(config, model, args['reports'])
+        predictor = InteractivePredictor(config, model, args.reports)
         predictor.predict()
     if args.release and args.load_path:
         model.evaluate(release=True)
