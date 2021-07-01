@@ -1,0 +1,316 @@
+{
+    "id": "4",
+    "class": "java.lang.NullPointerException",
+    "commit": "277e61721f34be16a20da663fd597edf6b51939b",
+    "frames": [
+        {
+            "method_name": "org.apache.commons.math3.geometry.euclidean.threed.Line.getAbscissa",
+            "file_name": "Line.java",
+            "line_number": "114",
+            "label": 0,
+            "path": "src/main/java/org/apache/commons/math3/geometry/euclidean/threed/Line.java"
+        },
+        {
+            "method_name": "org.apache.commons.math3.geometry.euclidean.threed.Line.toSubSpace",
+            "file_name": "Line.java",
+            "line_number": "129",
+            "label": 0,
+            "path": "src/main/java/org/apache/commons/math3/geometry/euclidean/threed/Line.java"
+        },
+        {
+            "method_name": "org.apache.commons.math3.geometry.euclidean.threed.SubLine.intersection",
+            "file_name": "SubLine.java",
+            "line_number": "116",
+            "label": 1,
+            "path": "src/main/java/org/apache/commons/math3/geometry/euclidean/threed/SubLine.java"
+        },
+        {
+            "method_name": "org.apache.commons.math3.geometry.euclidean.threed.SubLineTest.testIntersectionNotIntersecting",
+            "file_name": "SubLineTest.java",
+            "line_number": "160",
+            "label": 0,
+            "path": "src/test/java/org/apache/commons/math3/geometry/euclidean/threed/SubLineTest.java"
+        },
+        {
+            "method_name": "sun.reflect.NativeMethodAccessorImpl.invoke0",
+            "file_name": "Native",
+            "line_number": -1,
+            "label": 0,
+            "path": ""
+        },
+        {
+            "method_name": "sun.reflect.NativeMethodAccessorImpl.invoke",
+            "file_name": "NativeMethodAccessorImpl.java",
+            "line_number": "62",
+            "label": 0,
+            "path": ""
+        },
+        {
+            "method_name": "sun.reflect.DelegatingMethodAccessorImpl.invoke",
+            "file_name": "DelegatingMethodAccessorImpl.java",
+            "line_number": "43",
+            "label": 0,
+            "path": ""
+        },
+        {
+            "method_name": "java.lang.reflect.Method.invoke",
+            "file_name": "Method.java",
+            "line_number": "498",
+            "label": 0,
+            "path": ""
+        },
+        {
+            "method_name": "org.junit.runners.model.FrameworkMethod$1.runReflectiveCall",
+            "file_name": "FrameworkMethod.java",
+            "line_number": "47",
+            "label": 0,
+            "path": ""
+        },
+        {
+            "method_name": "org.junit.internal.runners.model.ReflectiveCallable.run",
+            "file_name": "ReflectiveCallable.java",
+            "line_number": "12",
+            "label": 0,
+            "path": ""
+        },
+        {
+            "method_name": "org.junit.runners.model.FrameworkMethod.invokeExplosively",
+            "file_name": "FrameworkMethod.java",
+            "line_number": "44",
+            "label": 0,
+            "path": ""
+        },
+        {
+            "method_name": "org.junit.internal.runners.statements.InvokeMethod.evaluate",
+            "file_name": "InvokeMethod.java",
+            "line_number": "17",
+            "label": 0,
+            "path": ""
+        },
+        {
+            "method_name": "org.junit.runners.ParentRunner.runLeaf",
+            "file_name": "ParentRunner.java",
+            "line_number": "271",
+            "label": 0,
+            "path": ""
+        },
+        {
+            "method_name": "org.junit.runners.BlockJUnit4ClassRunner.runChild",
+            "file_name": "BlockJUnit4ClassRunner.java",
+            "line_number": "4",
+            "label": 0,
+            "path": ""
+        },
+        {
+            "method_name": "org.junit.runners.BlockJUnit4ClassRunner.runChild",
+            "file_name": "BlockJUnit4ClassRunner.java",
+            "line_number": "4",
+            "label": 0,
+            "path": ""
+        },
+        {
+            "method_name": "org.junit.runners.ParentRunner$3.run",
+            "file_name": "ParentRunner.java",
+            "line_number": "238",
+            "label": 0,
+            "path": ""
+        },
+        {
+            "method_name": "org.junit.runners.ParentRunner$1.schedule",
+            "file_name": "ParentRunner.java",
+            "line_number": "63",
+            "label": 0,
+            "path": ""
+        },
+        {
+            "method_name": "org.junit.runners.ParentRunner.runChildren",
+            "file_name": "ParentRunner.java",
+            "line_number": "236",
+            "label": 0,
+            "path": ""
+        },
+        {
+            "method_name": "org.junit.runners.ParentRunner.access$000",
+            "file_name": "ParentRunner.java",
+            "line_number": "53",
+            "label": 0,
+            "path": ""
+        },
+        {
+            "method_name": "org.junit.runners.ParentRunner$2.evaluate",
+            "file_name": "ParentRunner.java",
+            "line_number": "229",
+            "label": 0,
+            "path": ""
+        },
+        {
+            "method_name": "org.junit.runners.ParentRunner.run",
+            "file_name": "ParentRunner.java",
+            "line_number": "309",
+            "label": 0,
+            "path": ""
+        },
+        {
+            "method_name": "junit.framework.JUnit4TestAdapter.run",
+            "file_name": "JUnit4TestAdapter.java",
+            "line_number": "4",
+            "label": 0,
+            "path": ""
+        },
+        {
+            "method_name": "org.apache.tools.ant.taskdefs.optional.junit.JUnitTestRunner.run",
+            "file_name": "JUnitTestRunner.java",
+            "line_number": "520",
+            "label": 0,
+            "path": ""
+        },
+        {
+            "method_name": "org.apache.tools.ant.taskdefs.optional.junit.JUnitTask.executeInVM",
+            "file_name": "JUnitTask.java",
+            "line_number": "1484",
+            "label": 0,
+            "path": ""
+        },
+        {
+            "method_name": "org.apache.tools.ant.taskdefs.optional.junit.JUnitTask.execute",
+            "file_name": "JUnitTask.java",
+            "line_number": "872",
+            "label": 0,
+            "path": ""
+        },
+        {
+            "method_name": "org.apache.tools.ant.taskdefs.optional.junit.JUnitTask.executeOrQueue",
+            "file_name": "JUnitTask.java",
+            "line_number": "1972",
+            "label": 0,
+            "path": ""
+        },
+        {
+            "method_name": "org.apache.tools.ant.taskdefs.optional.junit.JUnitTask.execute1",
+            "file_name": "JUnitTask.java",
+            "line_number": "824",
+            "label": 0,
+            "path": ""
+        },
+        {
+            "method_name": "org.apache.tools.ant.taskdefs.optional.junit.JUnitTask.execute",
+            "file_name": "JUnitTask.java",
+            "line_number": "2277",
+            "label": 0,
+            "path": ""
+        },
+        {
+            "method_name": "org.apache.tools.ant.UnknownElement.execute",
+            "file_name": "UnknownElement.java",
+            "line_number": "291",
+            "label": 0,
+            "path": ""
+        },
+        {
+            "method_name": "sun.reflect.GeneratedMethodAccessor4.invoke",
+            "file_name": "Unknown",
+            "line_number": -1,
+            "label": 0,
+            "path": ""
+        },
+        {
+            "method_name": "sun.reflect.DelegatingMethodAccessorImpl.invoke",
+            "file_name": "DelegatingMethodAccessorImpl.java",
+            "line_number": "43",
+            "label": 0,
+            "path": ""
+        },
+        {
+            "method_name": "java.lang.reflect.Method.invoke",
+            "file_name": "Method.java",
+            "line_number": "498",
+            "label": 0,
+            "path": ""
+        },
+        {
+            "method_name": "org.apache.tools.ant.dispatch.DispatchUtils.execute",
+            "file_name": "DispatchUtils.java",
+            "line_number": "106",
+            "label": 0,
+            "path": ""
+        },
+        {
+            "method_name": "org.apache.tools.ant.Task.perform",
+            "file_name": "Task.java",
+            "line_number": "348",
+            "label": 0,
+            "path": ""
+        },
+        {
+            "method_name": "org.apache.tools.ant.Target.execute",
+            "file_name": "Target.java",
+            "line_number": "392",
+            "label": 0,
+            "path": "src/main/java/org/apache/commons/math3/optim/nonlinear/vector/Target.java"
+        },
+        {
+            "method_name": "org.apache.tools.ant.Target.performTasks",
+            "file_name": "Target.java",
+            "line_number": "413",
+            "label": 0,
+            "path": "src/main/java/org/apache/commons/math3/optim/nonlinear/vector/Target.java"
+        },
+        {
+            "method_name": "org.apache.tools.ant.Project.executeSortedTargets",
+            "file_name": "Project.java",
+            "line_number": "1399",
+            "label": 0,
+            "path": ""
+        },
+        {
+            "method_name": "org.apache.tools.ant.Project.executeTarget",
+            "file_name": "Project.java",
+            "line_number": "1368",
+            "label": 0,
+            "path": ""
+        },
+        {
+            "method_name": "org.apache.tools.ant.helper.DefaultExecutor.executeTargets",
+            "file_name": "DefaultExecutor.java",
+            "line_number": "41",
+            "label": 0,
+            "path": ""
+        },
+        {
+            "method_name": "org.apache.tools.ant.Project.executeTargets",
+            "file_name": "Project.java",
+            "line_number": "1251",
+            "label": 0,
+            "path": ""
+        },
+        {
+            "method_name": "org.apache.tools.ant.Main.runBuild",
+            "file_name": "Main.java",
+            "line_number": "811",
+            "label": 0,
+            "path": ""
+        },
+        {
+            "method_name": "org.apache.tools.ant.Main.startAnt",
+            "file_name": "Main.java",
+            "line_number": "217",
+            "label": 0,
+            "path": ""
+        },
+        {
+            "method_name": "org.apache.tools.ant.launch.Launcher.run",
+            "file_name": "Launcher.java",
+            "line_number": "280",
+            "label": 0,
+            "path": ""
+        },
+        {
+            "method_name": "org.apache.tools.ant.launch.Launcher.main",
+            "file_name": "Launcher.java",
+            "line_number": "109",
+            "label": 0,
+            "path": ""
+        }
+    ],
+    "hash": "277e61721f34be16a20da663fd597edf6b51939b"
+}
