@@ -9,33 +9,30 @@ PATH_TO_INTELLIJ = os.path.join("..", "intellij-community")
 
 def get_changed_methods_from_commits(next_commit, path=PATH_TO_INTELLIJ):
     cmf = ChangedMethodsFinder()
-
+    
     changed_methods = cmf.find_changed_methods(path, [next_commit + '~1', next_commit])
+    #print(changed_methods)
     return changed_methods
 
 
 
 def get_commits_and_issues(path):
     f = open(path, "r")
-    pattern_class = re.compile("(?<=commit )[\w]+")
-    pattern_issue = re.compile("(?:^|\s)EA-[\d]+")
-    commits = list()
+    commits_info  = "".join(f.readlines())
+    pattern_commit = re.compile("(?<=\ncommit )\w{40,40}")
+    pattern_issue = re.compile("(?<=EA-)\d+")
     issues = defaultdict(list)
+    commits = [(commit.group(0), commit.start()) for commit in re.finditer(pattern_commit, commits_info)]
+    commits.append(("", len(commits_info)))
 
-    for line in f.readlines():
-        if len(line) == 48:
-            commits_founded = re.findall(pattern_class, line)
-            if commits_founded and len(commits_founded[-1]) == 40:
-                commits.append(commits_founded[-1])
-            continue
-
-        issues_founded = re.findall(pattern_issue, line)
-        for issue in issues_founded:
-            issues[commits[-1]].append(issue.strip()[3:])
-    return commits, issues
+    for i in range(len(commits)-1):
+        commit_text = commits_info[commits[i][1]: commits[i+1][1]]
+        issue_id = re.search(pattern_issue, commit_text)
+        issues[str(commits[i][0])] = issue_id.group(0)
+    return list(issues.keys()), issues
 
 
-def collect_all_changed_methods(fix_commits_hashes, fix_issues):
+def collect_all_changed_methods(fix_commits_hashes):
     changed_methods = list()
     for commit in tqdm(fix_commits_hashes):
         changed_methods.append(get_changed_methods_from_commits(commit))
@@ -58,11 +55,13 @@ def save_results(fix_commit_hashes, fix_issues, changed_methods):
         if changed_methods[i]:
             cms = list(changed_methods[i])
             methods = parse_method_signature(cms)
-            for issue in fix_issues[fix_commits_hashes[i]]:
-                info[issue] = {"hash" : fix_commits_hashes[i], "fixed_methods" : methods}
+            issue = fix_issues[fix_commit_hashes[i]]
+
+            info[issue] = {"hash" : fix_commit_hashes[i], "fixed_methods" : methods}
         else:
-            for issue in fix_issues[fix_commits_hashes[i]]:
-                info[issue] = {"hash" : fix_commits_hashes[i], "fixed_methods" : []}
+            issue = fix_issues[fix_commit_hashes[i]]
+            print(str(issue))
+            info[issue] = {"hash" : fix_commit_hashes[i], "fixed_methods" : []}
 
     f = open("fixed_methods.txt", 'w')
     json.dump(info, f, indent=4)
@@ -74,6 +73,6 @@ if __name__ == "__main__":
         PATH_TO_INTELLIJ = sys.argv[1]
     path_to_fix_commits = os.path.join(".", "commit_fix_hashes.txt")
     fix_commits_hashes, fix_issues = get_commits_and_issues(path_to_fix_commits)
-    changed_methods = collect_all_changed_methods(fix_commits_hashes, fix_issues)
+    changed_methods = collect_all_changed_methods(fix_commits_hashes)
     save_results(fix_commits_hashes, fix_issues, changed_methods)
     

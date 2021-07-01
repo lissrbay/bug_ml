@@ -73,14 +73,15 @@ class ChangedMethodsFinder:
         methods_info_b = self.get_method_info(ast_b)
         all_methods = list(methods_info_a.keys()) + list(methods_info_b.keys())
         changed_methods = set()
-
         for method in all_methods:
             if method in methods_info_a and method in methods_info_b:
                 method_code_a = self.code_fragment(methods_info_a[method][0], self.codes_a[diff_file])
                 method_code_b = self.code_fragment(methods_info_b[method][0], self.codes_b[diff_file])
+
                 if method_code_a != method_code_b:
                     changed_methods.add((method, methods_info_a[method][1]))
-
+            if method in methods_info_a and not (method in methods_info_b):
+                changed_methods.add((method, methods_info_a[method][1]))
         return changed_methods
 
 
@@ -124,5 +125,5 @@ if __name__ == "__main__":
     if len(sys.argv) > 1:
             path = sys.argv[1]
     cmf = ChangedMethodsFinder()
-    commits = ['f9feab98cf7c85bc0f61415b1ebc6ed91357e502~1','f9feab98cf7c85bc0f61415b1ebc6ed91357e502']
+    commits = ['ecdd37cc44f9beb6870c78c3432b1fddcdab8292~1','ecdd37cc44f9beb6870c78c3432b1fddcdab8292']
     print(cmf.find_changed_methods(path, commits))

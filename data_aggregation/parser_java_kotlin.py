@@ -57,7 +57,7 @@ class Parser:
         'pattern_class' : re.compile("(?:open|public|protected|private|static)? *(?:class|object|interface)\s+\w+"),
         'pattern_static' : re.compile("(companion object ) *\{")}
     java_patterns = {
-        'pattern_method_name' : re.compile('(?:(?:public|private|protected|static|final|native|synchronized|abstract|transient)+\s+)+[$_\w<>\[\]\s]*\s+[\$_\w]+\([^\)]*\)?\s*?'),
+        'pattern_method_name' : re.compile('(?:(?:public|private|protected|static|final|native|synchronized|abstract|transient)+\s+)+[$_@\w<>\[\]\s]*\s+[\$_\w]+\([^\)]*\)?\s*?'),
         'pattern_constructor_name' : re.compile("(?:public|protected|private|static) *\w+\([^\)]*\)+"),
         'pattern_class' : re.compile("(?:public|protected|private|static)? *(?:class|interface)\s+\w+\s"),
         'pattern_static' : re.compile("(static)\s+\{")}
