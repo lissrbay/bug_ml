@@ -4,6 +4,8 @@ import os
 from tqdm import tqdm
 from git import Repo, db
 import sys
+
+
 def list_files_in_commit(commit, repo):
     configFiles = repo.git.execute(
         ['git', 'ls-tree', '-r', '--name-only', commit.hexsha]).split()
@@ -31,21 +33,26 @@ def save_report(name, report):
 
 
 def load_report(name):
-    f = open(name, 'r')
-    report = json.load(f)
-    f.close()
+    try:
+        f = open(name, 'r')
+        report = json.load(f)
+        f.close()
+    except Exception:
+        return {}
     return report
+
 
 def create_subfolder(path):
     try:
         os.mkdir(path)
     except Exception:
+        # dir already exist
         pass 
+
 
 def find_file_for_frame(frame, matching_files):
     frame['path'] = ""
     for file_path in matching_files:
-        #print(frame)
         if frame['file_name'] in file_path:
             frame['path'] = file_path
             break
@@ -65,20 +72,21 @@ def add_paths_to_report(report, commit_files, file_limit=80):
 
 
 def add_paths_to_all_reports(from_repo, path_to_reports, path_to_reports_save, file_limit=80):
-
     for root, _, files in os.walk(path_to_reports):
         if not (root == path_to_reports):
             continue
         for file in tqdm(files):
             path_to_file = os.path.join(path_to_reports, file)
             report = load_report(path_to_file)
-
+            if report == {}:
+                continue
             hash = report['hash']
             commit = from_repo.commit(hash + '~1')
             commit_files = list_files_in_commit(commit, from_repo)
 
             add_paths_to_report(report, commit_files, file_limit=80)
             save_report(os.path.join(path_to_reports_save, file), report)
+
 
 PATH_TO_INTELLIJ = os.path.join("..", "intellij-community")
 PATH_TO_REPORTS = os.path.join("..", "intellij_fixed_201007")
@@ -88,11 +96,12 @@ if __name__ == "__main__":
     repo = Repo(path, odbt=db.GitDB)
 
     files_limit = FILES_LIMIT
-    create_subfolder(path_to_reports_save)
     if len(sys.argv) > 1:
         files_limit = sys.argv[3]
         PATH_TO_INTELLIJ = sys.argv[1]
         PATH_TO_REPORTS = sys.argv[2]
     path_to_reports = os.path.join(PATH_TO_REPORTS, "reports")
     path_to_reports_save = os.path.join(PATH_TO_REPORTS, "labeled_reports")
+    create_subfolder(path_to_reports_save)
+
     add_paths_to_all_reports(repo, path_to_reports, path_to_reports_save, files_limit)

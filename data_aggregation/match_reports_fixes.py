@@ -91,12 +91,12 @@ def label_reports(issues_info, path_to_report):
                 hash = issues_info[issues_info['report_id'] == report_id]['hash'].values[0]
                 label_one_report(report, hash, fixed_methods, path_to_file)
 
-PATH_TO_REPORTS = os.path.join("..", "intellij_fixed_201007")
+PATH_TO_REPORTS_INFO = os.path.join("..", "intellij_fixed_201007")
 if __name__ == "__main__":
-    path_to_report = PATH_TO_REPORTS
+    path_to_report_info = PATH_TO_REPORTS_INFO
     if len(sys.argv) > 1:
-        path_to_report = sys.argv[1]
+        path_to_report_info = sys.argv[1]
 
-    path_to_reports = os.path.join(path_to_report, "reports")
-    issues_info = collect_info(path_to_reports)
+    path_to_reports = os.path.join(path_to_report_info, "reports")
+    issues_info = collect_info(path_to_report_info)
     label_reports(issues_info, path_to_reports)

@@ -4,13 +4,16 @@ from tqdm import tqdm
 from collections import Counter
 import matplotlib.pyplot as plt
 import numpy as np
-path_to_reports = "/home/lissrbay/Рабочий стол/code2vec/code2vec_experiments/code2seq/labeled_reports"
+import sys
 
 
 def load_report(name):
-    f = open(name, 'r')
-    report = json.load(f)
-    f.close()
+    try:
+        f = open(name, 'r')
+        report = json.load(f)
+        f.close()
+    except Exception:
+        return {}
     return report
 
 
@@ -19,6 +22,7 @@ def add_count_labels_on_positions_in_report(report, counts):
         if frame['label'] == 1:
             counts[i] += 1
             break
+    return counts
 
 
 def count_labels_on_positions(path_to_reports):
@@ -28,14 +32,19 @@ def count_labels_on_positions(path_to_reports):
         if not (root == path_to_reports):
             continue
         for file in tqdm(files):
-            report = load_report(path_to_reports + "//" + file)
+            #print(os.path.join(path_to_reports, file))
+            report = load_report(os.path.join(path_to_reports, file))
+            if report == {}:
+                continue
             mx = max(mx, len(report['frames']))
-            add_count_labels_on_positions_in_report(report, counts)
+            counts = add_count_labels_on_positions_in_report(report, counts)
 
     counts_without_zeros = [(j, i) for j, i in enumerate(counts) if i > 0]
     return counts_without_zeros
 
+
 def count_quantiles(counts, quantiles=[0.95, 0.99]):
+    borders = []
     for quantile in quantiles:
         limit = quantile*sum([i[1] for i in counts])
         acc = 0
@@ -45,11 +54,19 @@ def count_quantiles(counts, quantiles=[0.95, 0.99]):
                 acc += count
                 x = i
         print("{} reports that is {} quantile had labels before {}-th frame".format(acc, quantile, x))
+        borders.append(x)
+
+    return borders
 
 
-counts = count_labels_on_positions(path_to_reports)
-all_values = sum([[j] * i for j, i in counts], [])
-plt.hist(all_values, bins=80)
-plt.show()
-print(all_values)
-count_quantiles(counts)
+if __name__ == "__main__":
+    path_to_reports = '.'
+    if len(sys.argv) > 1:
+            path_to_reports = os.path.join(sys.argv[1], 'labeled_reports')
+    counts = count_labels_on_positions(path_to_reports)
+    all_values = sum([[j] * i for j, i in counts], [])
+
+    borders = count_quantiles(counts)
+    all_values = list(filter(lambda x: x < borders[-1], all_values))
+    plt.hist(all_values, bins=borders[-1])
+    plt.show()

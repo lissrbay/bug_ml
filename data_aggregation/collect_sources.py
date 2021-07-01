@@ -45,6 +45,13 @@ def get_sources_for_report(repo, report, commit, full_save_path, file_limit=80):
             f.close()
 
 
+def get_sources_for_path(repo, path, full_save_path):
+    code = get_file_by_commit(repo, "HEAD", path)
+    f = open(os.path.join(full_save_path, path), 'w', encoding="utf-8")
+    f.write(code)
+    f.close()
+
+
 def collect_sources_for_reports(repo, save_path, path_to_reports, file_limit=80):
     for root, dirs, files in os.walk(path_to_reports):
         if not (root == path_to_reports):
@@ -64,6 +71,12 @@ def collect_sources_for_reports(repo, save_path, path_to_reports, file_limit=80)
             get_sources_for_report(repo, report, commit, full_save_path, file_limit)
 
 
+def collect_sources_from_paths(repo, save_path, paths, file_limit=80):
+    for path in paths:
+        create_subfolder(save_path)
+        get_sources_for_report(repo, path, save_path)
+
+
 PATH_TO_INTELLIJ = os.path.join("..", "intellij-community")
 PATH_TO_REPORTS = os.path.join("..", "intellij_fixed_201007")
 FILES_LIMIT = 80
@@ -73,7 +86,7 @@ if __name__ == "__main__":
 
     files_limit = FILES_LIMIT
     if len(sys.argv) > 1:
-        files_limit = sys.argv[3]
+        files_limit = int(sys.argv[3])
         PATH_TO_INTELLIJ = sys.argv[1]
         PATH_TO_REPORTS = sys.argv[2]
     path_to_reports = os.path.join(PATH_TO_REPORTS, "labeled_reports")
