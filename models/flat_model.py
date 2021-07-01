@@ -8,7 +8,7 @@ import torch.nn.functional as F
 from torch import FloatTensor, LongTensor
 import math
 from tqdm import tqdm
-import model as base_model_functions
+from . import model as base_model_functions
 from collections import defaultdict
 
 

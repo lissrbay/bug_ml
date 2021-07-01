@@ -9,6 +9,7 @@ from sklearn.model_selection import train_test_split
 from catboost import CatBoost
 from catboost import Pool
 
+
 def replace_exceptions(df_features):
     exceptions = df_features['exception_class']
     exceptions = [eval(e) for e in exceptions]
@@ -21,6 +22,8 @@ def replace_exceptions(df_features):
     for e in exceptions:
         df_features[e] = df_features['exception_class_'].apply(lambda x: 1 if e in x else 0)
     return df_features
+
+
 def make_indices(df_features, reports_ids, reports_code):
     a = [[int(reports_ids[i])] * len(reports_code[i]) for i in range(len(reports_ids))]
     b = []
@@ -29,6 +32,7 @@ def make_indices(df_features, reports_ids, reports_code):
     df_features['report_id'] = b
     df_features['indices'] = df_features['report_id'].apply(lambda x: str(x)+'_') + df_features['method_stack_position'].apply(lambda x: str(x))
     return df_features
+
 
 if __name__ == "__main__":
     path = os.path.join("..", "data")

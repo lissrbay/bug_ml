@@ -6,6 +6,17 @@ from config import Config
 from interactive_predict import InteractivePredictor
 from model import Model
 
+
+def predict(path):
+    np.random.seed(42)
+    tf.set_random_seed(42)
+    config = Config.get_default_config(args)
+    model = Model(config)
+    predictor = InteractivePredictor(config, model, path)
+    predictor.predict()
+    model.close_session()
+
+
 if __name__ == '__main__':
     parser = ArgumentParser()
     parser.add_argument("-d", "--data", dest="data_path",
@@ -23,7 +34,7 @@ if __name__ == '__main__':
     parser.add_argument('--predict', action='store_true')
     parser.add_argument('--debug', action='store_true')
     parser.add_argument('--seed', type=int, default=239)
-    parser.add_argument('--reports', type=int, default=239)
+    parser.add_argument('--reports', type=str, default=239)
 
     args = parser.parse_args()
 

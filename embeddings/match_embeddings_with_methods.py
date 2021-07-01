@@ -32,6 +32,7 @@ def process_report(root):
         file_with_method = frame['file_name']
         if method_with_bug == i and not file_with_method:
             break
+        print(file_with_method)
         if file_with_method:
             file_with_csv = os.path.join(root, file_with_method.split('.')[0] + '.csv')
             if method_with_bug == i and not os.path.exists(file_with_csv):
@@ -47,29 +48,26 @@ def process_report(root):
         report_data.append(np.zeros(384))
     return flag, report_data, method_with_bug
 
-def pad_sequence(data, target, length):
-  data_ = deepcopy(data)
-  target_ = deepcopy(target)
-  X = []
-  for i, d in enumerate(data_):
-    X_ = []
-    for j in d:
-      if j.shape[0] > 384:
-        j = j[1:len(j)-1]
-      X_.append(j)
-    if len(d) > length:
-      X_ = X_[:length]
-      target_[i] = target_[i][:length]
-    else:
-      pad = length - len(d)
-      size_of_vector = len(X_[0])
-      for p in range(pad):
-        curr_samples = len(X_)
-        X_ = np.insert(np.array(X_).flatten(), np.array(X_).flatten().shape[0],
-                        np.ones(size_of_vector)).reshape(curr_samples+1, 384)
-        target_[i] = np.insert(target_[i], target_[i].shape[0], 0)
-    X.append(X_)
-  return np.asarray(X).astype('float32'), np.asarray(target_).astype('float32') 
+
+def process_data(path_to_files, path_to_methods):
+    report_data = []
+    report = load_report(path_to_methods)
+    for i, method_info in enumerate(report[:80]):
+        method_name = clean_method_name(method_info['method_name'])
+        file_with_method = method_info['path']
+        if file_with_method:
+            file_with_csv = os.path.join(path_to_files, file_with_method.split('/')[-1].split('.')[0] + '.csv')
+            if os.path.exists(file_with_csv):
+                df = pd.read_csv(file_with_csv, index_col=0)
+                code_vector = df[df['method'] == method_name.lower()].drop(['method'], axis=1).values
+                if code_vector.shape[0] > 0:
+                    report_data.append(code_vector[0, :])
+                    continue
+        report_data.append(np.zeros(320))
+    for i in range(len(report_data), 80):
+        report_data.append(np.zeros(320))
+    return report_data
+
 
 def match_embeddings_with_methods(path_to_report):
     data = []
@@ -85,6 +83,7 @@ def match_embeddings_with_methods(path_to_report):
             labels.append(frames_labels)
     return data, labels
 
+
 PATH_TO_REPORTS = os.path.join("..", "intellij_fixed_201007")
 FILES_LIMIT = 80
 
@@ -99,6 +98,5 @@ if __name__ == "__main__":
 
     path_to_report = os.path.join(path_to_report, "labeled_reports")
     data, labels = match_embeddings_with_methods(path_to_report)
-    data, target = pad_sequence(data, labels, frame_limit)
     np.save(os.path.join("..", "data", 'X(' + embeddings_type_dir + ')'), data) 
-    np.save(os.path.join("..", "data", 'y(' + embeddings_type_dir + ')'), target) 
+    np.save(os.path.join("..", "data", 'y(' + embeddings_type_dir + ')'), labels) 

@@ -11,16 +11,18 @@ import math
 from tqdm import tqdm
 import itertools as it
 import json
-import rank_loss
-import flat_model
+from . import rank_loss
+from . import flat_model
 
 
 RunResult = namedtuple("RunResult", ['train_history', 'val_history'])
 Parameters = namedtuple("Parameters", ['lr', 'epoch', 'optim', 'anneal_coef', 'anneal_epoch', 'dim'])
 
-def read_data(embeddings_path='X.npy', labels_path='y.npy', reports_path='report_ids.npy'):
+def read_data(embeddings_path='X.npy', labels_path='y.npy', reports_path=None):
     X = np.load(embeddings_path)
     y = np.load(labels_path)
+    if reports_path is None:
+        return X, y
     reports_used = np.load(reports_path)
     return X, y, reports_used
 
@@ -171,13 +173,17 @@ class BugLocalizationModel():
     anneal_epochs = [5, 10, 15]
     hidden_dim = [40, 60, 80]
     optims = [optim.Adam]
-    def __init__(self, embeddings_path='X.npy', labels_path='y.npy',
-                       reports_path='report_ids.npy', ranked=False, flat=False):
-        self.X, self.y, self.reports_used = read_data(embeddings_path, labels_path, reports_path)
-        self.has_code = self.check_code_embeddings(self.X, self.y)
-        #count_embeddings_before_buggy_method(self.has_code)
-        self.train_x, self.train_y, self.test_x, self.test_y = train_test_split(self.X, self.y)
-        self.embeddings_size = self.X.shape[2]
+    def __init__(self, embeddings_path=None, labels_path=None,
+                       reports_path=None, ranked=False, flat=False):
+        if not(embeddings_path is None):
+            if reports_path is None:
+                self.X, self.y = read_data(embeddings_path, labels_path)
+            else:
+                self.X, self.y, self.reports_used = read_data(embeddings_path, labels_path, reports_path)
+            self.has_code = self.check_code_embeddings(self.X, self.y)
+            #count_embeddings_before_buggy_method(self.has_code)
+            self.train_x, self.train_y, self.test_x, self.test_y = train_test_split(self.X, self.y)
+            self.embeddings_size = self.X.shape[2]
         self.best_val_acc = 0.0
         self.run_records = []
         self.model = None
@@ -188,7 +194,7 @@ class BugLocalizationModel():
             self.do_epoch = do_epoch
             self.criterion = nn.CrossEntropyLoss
 
-        if flat:
+        if not (embeddings_path == None) and flat:
             (self.train_x, self.train_y, self.test_x, 
             self.test_y, self.report_info) = flat_model.test_train_split_flat(self.X, self.y)
             self.do_epoch = flat_model.do_epoch
@@ -256,8 +262,8 @@ class BugLocalizationModel():
     
     def train(self, params, model_to_train, top_two=False):
         self.run_records = []
-        self.params = list(self.create_list_of_train_hyperparameters())
-        for param in self.params:
+
+        for param in params:
             print(param)
             loss = self.criterion()
             self.model = model_to_train(
@@ -289,3 +295,21 @@ class BugLocalizationModel():
         f = open('results' + name + '.txt', 'w')
         json.dump(results, f, indent=4)
         f.close()
+
+    def best_params(self):
+        best_acc = 0
+        best_param = None
+        for i, record in enumerate(self.run_records):
+            if record.val_history > best_acc:
+                best_acc = record.val_history
+                best_param = self.params[i]
+
+        return best_param
+
+
+    def save_model(self, path='./models/lstm_code2seq_model'):
+        torch.save(self.model, path)
+
+
+    def load_model(self, path='./models/lstm_code2seq_model'):
+        self.model = torch.load(path)
