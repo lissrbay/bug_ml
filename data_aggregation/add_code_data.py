@@ -4,7 +4,7 @@ import json
 import re
 from parser_java_kotlin import Parser
 from add_path_info import load_report
-
+import pickle
 
 def remove_tabs(code):
     code = list(filter(lambda x: not (x.strip()[:2] == '//'), code))
@@ -53,11 +53,15 @@ def collect_code(path):
                 all_methods_code.append(code)
         targets.append(target)
         reports_code.append(all_methods_code)
-    return reports_code, targets
+    return reports_code, targets, reports_ids
 
 PATH_TO_REPORTS = os.path.join("..", "intellij_fixed_201007")
 
 if __name__ == "__main__":
     path = os.path.join(PATH_TO_REPORTS, "labeled_reports")
+    path_save = os.path.join("..", "data")
+    reports_code, targets, reports_ids = collect_code(path)
+    pickle.dump(reports_code, open(os.path.join(path_save, "reports_code")))
+    pickle.dump(targets, open(os.path.join(path_save, "targets")))
+    pickle.dump(reports_ids, open(os.path.join(path_save, "reports_ids")))
 
-    reports_code, targets = collect_code(path)
