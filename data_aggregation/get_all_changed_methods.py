@@ -9,9 +9,7 @@ PATH_TO_INTELLIJ = os.path.join("..", "intellij-community")
 
 def get_changed_methods_from_commits(next_commit, path=PATH_TO_INTELLIJ):
     cmf = ChangedMethodsFinder()
-    
     changed_methods = cmf.find_changed_methods(path, [next_commit + '~1', next_commit])
-    #print(changed_methods)
     return changed_methods
 
 
@@ -32,10 +30,10 @@ def get_commits_and_issues(path):
     return list(issues.keys()), issues
 
 
-def collect_all_changed_methods(fix_commits_hashes):
+def collect_all_changed_methods(fix_commits_hashes, path):
     changed_methods = list()
     for commit in tqdm(fix_commits_hashes):
-        changed_methods.append(get_changed_methods_from_commits(commit))
+        changed_methods.append(get_changed_methods_from_commits(commit, path))
     return changed_methods
 
 
@@ -60,7 +58,6 @@ def save_results(fix_commit_hashes, fix_issues, changed_methods):
             info[issue] = {"hash" : fix_commit_hashes[i], "fixed_methods" : methods}
         else:
             issue = fix_issues[fix_commit_hashes[i]]
-            print(str(issue))
             info[issue] = {"hash" : fix_commit_hashes[i], "fixed_methods" : []}
 
     f = open("fixed_methods.txt", 'w')
@@ -73,6 +70,6 @@ if __name__ == "__main__":
         PATH_TO_INTELLIJ = sys.argv[1]
     path_to_fix_commits = os.path.join(".", "commit_fix_hashes.txt")
     fix_commits_hashes, fix_issues = get_commits_and_issues(path_to_fix_commits)
-    changed_methods = collect_all_changed_methods(fix_commits_hashes)
+    changed_methods = collect_all_changed_methods(fix_commits_hashes, PATH_TO_INTELLIJ)
     save_results(fix_commits_hashes, fix_issues, changed_methods)
     
