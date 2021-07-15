@@ -1,4 +1,5 @@
-#!/bin/zsh
+
+#!/bin/bash
 embeddings_type=$1
 path_to_intellij=$2
 path_to_reports=$3
@@ -8,9 +9,9 @@ path_to_reports=$3
 #fi
 
 #echo "Intellij repository collected"
-conda env create -f ./env.yml
-conda deactivate
-source activate bug_ml
+#conda env create -f ./env.yml --force
+eval "$(conda shell.bash hook)"
+conda activate bug_ml
 touch conda_info.txt
 truncate -s 0 conda_info.txt
 conda info >> conda_info.txt
@@ -21,7 +22,7 @@ path_to_python=${path_to_conda}'/bin/python'
 echo 'Path to conda: '$path_to_conda
 eval $path_to_python -m pip install rouge
 eval $path_to_python -m pip install gensim
-
+eval $path_to_python -m pip install catboost
 cd ./data_aggregation
 sudo sh ./collect_fix_commits.sh ${path_to_intellij}
 $path_to_python get_all_changed_methods.py ${path_to_intellij}
@@ -60,4 +61,3 @@ if ["$embeddings_type" == "code2vec"]; then
 fi
 mkdir ./data
 $path_to_python embeddings/match_embeddings_with_methods.py ${path_to_reports} $embeddings_type 80
-
