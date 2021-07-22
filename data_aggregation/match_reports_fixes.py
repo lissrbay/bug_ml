@@ -1,9 +1,12 @@
-import pandas as pd
 import json
 import os
+from argparse import ArgumentParser
+
+import pandas as pd
 from tqdm import tqdm
+
 from add_path_info import load_report
-import sys
+
 
 def collect_info(path_to_reports):
     f = open("fixed_methods.txt", "r")
@@ -18,12 +21,12 @@ def collect_info(path_to_reports):
             hashes.append(info['hash'])
 
     issues_info = pd.read_csv(os.path.join(path_to_reports, "issue_report_ids.csv"))
-    issues_info_ = pd.DataFrame({"issue_id" : issues, "fixed_method" : method_names, 'path':path, 'hash' : hashes})
+    issues_info_ = pd.DataFrame({"issue_id": issues, "fixed_method": method_names, 'path': path, 'hash': hashes})
     full = issues_info.set_index("issue_id").join(issues_info_.set_index("issue_id"))
     full = full.dropna()
     full.to_csv("report_issue_methods.csv")
 
-    return full 
+    return full
 
 
 def save_report(name, report):
@@ -57,7 +60,7 @@ def label_frames(report, methods_info):
         paths.append(info['path'].split('/')[-1])
     for frame in report['frames']:
         frame = label_frame(frame, fixed_methods, paths)
-            
+
     return report
 
 
@@ -94,12 +97,16 @@ def label_reports(issues_info, path_to_report):
             except Exception:
                 print(file)
 
-PATH_TO_REPORTS_INFO = os.path.join("..", "intellij_fixed_201007")
-if __name__ == "__main__":
-    path_to_report_info = PATH_TO_REPORTS_INFO
-    if len(sys.argv) > 1:
-        path_to_report_info = sys.argv[1]
 
-    path_to_reports = os.path.join(path_to_report_info, "reports")
-    issues_info = collect_info(path_to_report_info)
+def main():
+    parser = ArgumentParser()
+    parser.add_argument("--reports_path", type=str)
+    args = parser.parse_args()
+
+    path_to_reports = os.path.join(args.reports_path, "reports")
+    issues_info = collect_info(args.reports_path)
     label_reports(issues_info, path_to_reports)
+
+
+if __name__ == "__main__":
+    main()

@@ -24,13 +24,19 @@ eval $path_to_python -m pip install rouge
 eval $path_to_python -m pip install gensim
 eval $path_to_python -m pip install catboost
 cd ./data_aggregation
+echo "sudo sh ./collect_fix_commits.sh ${path_to_intellij}"
 sudo sh ./collect_fix_commits.sh ${path_to_intellij}
-$path_to_python get_all_changed_methods.py ${path_to_intellij}
-$path_to_python match_reports_fixes.py ${path_to_reports}
+echo "$path_to_python get_all_changed_methods.py --intellij_path ${path_to_intellij}"
+$path_to_python get_all_changed_methods.py --intellij_path ${path_to_intellij}
+echo "$path_to_python match_reports_fixes.py --reports_path ${path_to_reports}"
+$path_to_python match_reports_fixes.py --reports_path ${path_to_reports}
 
-$path_to_python add_path_info.py ${path_to_intellij} ${path_to_reports} 80
-$path_to_python collect_sources.py ${path_to_intellij} ${path_to_reports} 80
-$path_to_python ./EDA/count_optimal_frames_limit.py ${path_to_reports}
+echo "$path_to_python add_path_info.py --intellij_path ${path_to_intellij} --reports_path ${path_to_reports} --files_limit 80"
+$path_to_python add_path_info.py --intellij_path ${path_to_intellij} --reports_path ${path_to_reports} --files_limit 80
+echo "$path_to_python collect_sources.py --intellij_path ${path_to_intellij} --reports_path ${path_to_reports} --files_limit 80"
+$path_to_python collect_sources.py --intellij_path ${path_to_intellij} --reports_path ${path_to_reports} --files_limit 80
+echo "$path_to_python ./EDA/count_optimal_frames_limit.py --reports_path ${path_to_reports}"
+$path_to_python ./EDA/count_optimal_frames_limit.py --reports_path ${path_to_reports}
 cd ..
 echo $embeddings_type
 if [[ "$embeddings_type" == "code2seq" ]]; then
@@ -40,9 +46,9 @@ if [[ "$embeddings_type" == "code2seq" ]]; then
     fi
     rsync ./embeddings/code2seq ./code2seq
     cd $path_to_code2seq
-    wget https://s3.amazonaws.com/code2seq/model/java-large/java-large-model.tar.gz
-    tar -xvzf java-large-model.tar.gz
-    $path_to_python code2seq.py --load models/java-large-model/model_iter52.release --predict --reports ${path_to_reports}
+#    wget https://s3.amazonaws.com/code2seq/model/java-large/java-large-model.tar.gz
+#    tar -xvzf java-large-model.tar.gz
+#    $path_to_python code2seq.py --load models/java-large-model/model_iter52.release --predict --reports ${path_to_reports}
     cd ..
 fi
 
@@ -60,4 +66,4 @@ if ["$embeddings_type" == "code2vec"]; then
     cd ..
 fi
 mkdir ./data
-$path_to_python embeddings/match_embeddings_with_methods.py ${path_to_reports} $embeddings_type 80
+$path_to_python embeddings/match_embeddings_with_methods.py --reports_path ${path_to_reports} --embeddings_type $embeddings_type

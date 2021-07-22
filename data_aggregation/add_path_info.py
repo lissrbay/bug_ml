@@ -1,9 +1,10 @@
-from collections import defaultdict
+import argparse
 import json
 import os
-from tqdm import tqdm
+from collections import defaultdict
+
 from git import Repo, db
-import sys
+from tqdm import tqdm
 
 
 def list_files_in_commit(commit, repo):
@@ -47,7 +48,7 @@ def create_subfolder(path):
         os.mkdir(path)
     except Exception:
         # dir already exist
-        pass 
+        pass
 
 
 def find_file_for_frame(frame, matching_files):
@@ -88,20 +89,31 @@ def add_paths_to_all_reports(from_repo, path_to_reports, path_to_reports_save, f
             save_report(os.path.join(path_to_reports_save, file), report)
 
 
-PATH_TO_INTELLIJ = os.path.join("..", "intellij-community")
-PATH_TO_REPORTS = os.path.join("..", "intellij_fixed_201007")
-FILES_LIMIT = 80
-if __name__ == "__main__":
-    path = PATH_TO_INTELLIJ
-    repo = Repo(path, odbt=db.GitDB)
+def parse_args():
+    parser = argparse.ArgumentParser()
 
-    files_limit = FILES_LIMIT
-    if len(sys.argv) > 1:
-        files_limit = sys.argv[3]
-        PATH_TO_INTELLIJ = sys.argv[1]
-        PATH_TO_REPORTS = sys.argv[2]
-    path_to_reports = os.path.join(PATH_TO_REPORTS, "reports")
-    path_to_reports_save = os.path.join(PATH_TO_REPORTS, "labeled_reports")
+    parser.add_argument("--intellij_path", type=str)
+    parser.add_argument("--reports_path", type=str)
+    parser.add_argument("--files_limit", type=int, default=80)
+
+    return parser.parse_args()
+
+
+def main():
+    args = parse_args()
+
+    intellij_path = args.intellij_path
+    reports_path = args.reports_path
+    files_limit = args.files_limit
+
+    repo = Repo(intellij_path, odbt=db.GitDB)
+
+    path_to_reports = os.path.join(reports_path, "reports")
+    path_to_reports_save = os.path.join(reports_path, "labeled_reports")
     create_subfolder(path_to_reports_save)
 
     add_paths_to_all_reports(repo, path_to_reports, path_to_reports_save, files_limit)
+
+
+if __name__ == "__main__":
+    main()

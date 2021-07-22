@@ -1,10 +1,10 @@
-import os
+import argparse
 import json
-import re
-import pandas as pd
+import os
+
 import numpy as np
-import sys
-from copy import deepcopy
+import pandas as pd
+
 
 def load_report(name):
     f = open(name, 'r')
@@ -20,11 +20,12 @@ def clean_method_name(method_name):
     method_name = method_name.replace('$', '')
     return method_name
 
+
 def process_report(root):
     report_data = []
     method_with_bug = -1
     flag = 0
-    report = load_report(root+'.json')
+    report = load_report(root + '.json')
     for i, frame in enumerate(report['frames']):
         if frame['label']:
             method_with_bug = i
@@ -84,19 +85,25 @@ def match_embeddings_with_methods(path_to_report):
     return data, labels
 
 
-PATH_TO_REPORTS = os.path.join("..", "intellij_fixed_201007")
-FILES_LIMIT = 80
+def parse_args():
+    parser = argparse.ArgumentParser()
+
+    parser.add_argument("--embeddings_type", type=str)
+    parser.add_argument("--reports_path", type=str)
+
+    return parser.parse_args()
+
+
+def main():
+    args = parse_args()
+    embeddings_type_dir = args.embeddings_type
+    reports_path = args.reports_path
+
+    path_to_report = os.path.join(reports_path, "labeled_reports")
+    data, labels = match_embeddings_with_methods(path_to_report)
+    np.save(os.path.join("data", 'X(' + embeddings_type_dir + ')'), data)
+    np.save(os.path.join("data", 'y(' + embeddings_type_dir + ')'), labels)
+
 
 if __name__ == "__main__":
-    frame_limit = FILES_LIMIT
-    embeddings_type_dir = "code2seq"
-    path_to_report = PATH_TO_REPORTS
-    if len(sys.argv) > 1:
-        path_to_report = sys.argv[1]
-        embeddings_type_dir = sys.argv[2]
-        frame_limit = int(sys.argv[3])
-
-    path_to_report = os.path.join(path_to_report, "labeled_reports")
-    data, labels = match_embeddings_with_methods(path_to_report)
-    np.save(os.path.join("..", "data", 'X(' + embeddings_type_dir + ')'), data) 
-    np.save(os.path.join("..", "data", 'y(' + embeddings_type_dir + ')'), labels) 
+    main()
