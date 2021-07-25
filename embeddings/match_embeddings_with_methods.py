@@ -1,11 +1,13 @@
-import os
+import argparse
 import json
-import re
-import pandas as pd
+import os
+
 import numpy as np
 import sys
 import pickle
 from copy import deepcopy
+import pandas as pd
+
 
 def load_report(name):
     f = open(name, 'r')
@@ -36,6 +38,7 @@ def process_report_by_file(root, frame_limit):
     frames_len = report['frames'][:frame_limit]
 
     for i, frame in enumerate(report['frames'][:frame_limit]):
+
         if frame['label']:
             method_with_bug = i
         method_name = clean_method_name(frame['method_name'])
@@ -84,8 +87,8 @@ def match_embeddings_with_methods_from_df(df, method_meta):
     return np.zeros(384)
 
 
-PATH_TO_REPORTS = os.path.join("..", "intellij_fixed_201007")
-FILES_LIMIT = 80
+def parse_args():
+    parser = argparse.ArgumentParser()
 
 if __name__ == "__main__":
     frame_limit = FILES_LIMIT

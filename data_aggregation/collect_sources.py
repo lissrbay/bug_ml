@@ -1,14 +1,14 @@
-from git import Repo, db
-import json
+import argparse
 import os
-from tqdm import tqdm
 import re
-import sys
+
+from git import Repo, db
+from tqdm import tqdm
+
 from add_path_info import load_report, create_subfolder
 
 
 def remove_unused_begin(code):
-    clean_code = []
     bias = 0
     for line in code.split('\n'):
         bias += 1
@@ -39,7 +39,7 @@ def get_sources_for_report(repo, report, commit, full_save_path, file_limit=80):
             break
         if frame['path'] != '':
             diff_file = frame['path']
-            code = get_file_by_commit(repo, commit+"~1", diff_file)
+            code = get_file_by_commit(repo, commit + "~1", diff_file)
             f = open(os.path.join(full_save_path, frame['file_name']), 'w', encoding="utf-8")
             f.write(code)
             f.close()
@@ -74,22 +74,33 @@ def collect_sources_for_reports(repo, save_path, path_to_reports, file_limit=80)
 def collect_sources_from_paths(repo, save_path, paths, file_limit=80):
     for path in paths:
         create_subfolder(save_path)
-        get_sources_for_report(repo, path, save_path)
+        get_sources_for_report(repo, path, save_path, file_limit=file_limit)
 
 
-PATH_TO_INTELLIJ = os.path.join("..", "intellij-community")
-PATH_TO_REPORTS = os.path.join("..", "intellij_fixed_201007")
-FILES_LIMIT = 80
-if __name__ == "__main__":
-    path = PATH_TO_INTELLIJ
-    repo = Repo(path, odbt=db.GitDB)
+def parse_args():
+    parser = argparse.ArgumentParser()
 
-    files_limit = FILES_LIMIT
-    if len(sys.argv) > 1:
-        files_limit = int(sys.argv[3])
-        PATH_TO_INTELLIJ = sys.argv[1]
-        PATH_TO_REPORTS = sys.argv[2]
-    path_to_reports = os.path.join(PATH_TO_REPORTS, "labeled_reports")
-    save_path = os.path.join(PATH_TO_REPORTS, "labeled_reports")
+    parser.add_argument("--intellij_path", type=str)
+    parser.add_argument("--reports_path", type=str)
+    parser.add_argument("--files_limit", type=int, default=80)
+
+    return parser.parse_args()
+
+
+def main():
+    args = parse_args()
+
+    intellij_path = args.intellij_path
+    reports_path = args.reports_path
+    files_limit = args.files_limit
+
+    repo = Repo(intellij_path, odbt=db.GitDB)
+
+    path_to_reports = os.path.join(reports_path, "labeled_reports")
+    save_path = os.path.join(reports_path, "labeled_reports")
     create_subfolder(save_path)
     collect_sources_for_reports(repo, save_path, path_to_reports, files_limit)
+
+
+if __name__ == "__main__":
+    main()

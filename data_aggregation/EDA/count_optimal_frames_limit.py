@@ -1,10 +1,9 @@
 import json
 import os
-from tqdm import tqdm
-from collections import Counter
+from argparse import ArgumentParser
+
 import matplotlib.pyplot as plt
-import numpy as np
-import sys
+from tqdm import tqdm
 
 
 def load_report(name):
@@ -32,7 +31,7 @@ def count_labels_on_positions(path_to_reports):
         if not (root == path_to_reports):
             continue
         for file in tqdm(files):
-            #print(os.path.join(path_to_reports, file))
+            # print(os.path.join(path_to_reports, file))
             report = load_report(os.path.join(path_to_reports, file))
             if report == {}:
                 continue
@@ -46,7 +45,7 @@ def count_labels_on_positions(path_to_reports):
 def count_quantiles(counts, quantiles=[0.95, 0.99]):
     borders = []
     for quantile in quantiles:
-        limit = quantile*sum([i[1] for i in counts])
+        limit = quantile * sum([i[1] for i in counts])
         acc = 0
         x = 0
         for i, count in counts:
@@ -59,14 +58,20 @@ def count_quantiles(counts, quantiles=[0.95, 0.99]):
     return borders
 
 
-if __name__ == "__main__":
-    path_to_reports = '.'
-    if len(sys.argv) > 1:
-            path_to_reports = os.path.join(sys.argv[1], 'labeled_reports')
-    counts = count_labels_on_positions(path_to_reports)
+def main():
+    parser = ArgumentParser()
+    parser.add_argument("--reports_path", type=str)
+    args = parser.parse_args()
+
+    reports_path = os.path.join(args.reports_path, 'labeled_reports')
+    counts = count_labels_on_positions(reports_path)
     all_values = sum([[j] * i for j, i in counts], [])
 
     borders = count_quantiles(counts)
     all_values = list(filter(lambda x: x < borders[-1], all_values))
     plt.hist(all_values, bins=borders[-1])
     plt.show()
+
+
+if __name__ == '__main__':
+    main()

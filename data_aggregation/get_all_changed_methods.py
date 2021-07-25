@@ -1,30 +1,31 @@
-from get_java_methods import ChangedMethodsFinder
-from tqdm import tqdm
-import re
-from collections import defaultdict
+import argparse
 import json
 import os
-import sys
-PATH_TO_INTELLIJ = os.path.join("..", "intellij-community")
+import re
+from collections import defaultdict
 
-def get_changed_methods_from_commits(next_commit, path=PATH_TO_INTELLIJ):
+from tqdm import tqdm
+
+from get_java_methods import ChangedMethodsFinder
+
+
+def get_changed_methods_from_commits(next_commit, path):
     cmf = ChangedMethodsFinder()
     changed_methods = cmf.find_changed_methods(path, [next_commit + '~1', next_commit])
     return changed_methods
 
 
-
 def get_commits_and_issues(path):
     f = open(path, "r")
-    commits_info  = "".join(f.readlines())
+    commits_info = "".join(f.readlines())
     pattern_commit = re.compile("(?<=\ncommit )\w{40,40}")
     pattern_issue = re.compile("(?<=EA-)\d+")
     issues = defaultdict(list)
     commits = [(commit.group(0), commit.start()) for commit in re.finditer(pattern_commit, commits_info)]
     commits.append(("", len(commits_info)))
 
-    for i in range(len(commits)-1):
-        commit_text = commits_info[commits[i][1]: commits[i+1][1]]
+    for i in range(len(commits) - 1):
+        commit_text = commits_info[commits[i][1]: commits[i + 1][1]]
         issue_id = re.search(pattern_issue, commit_text)
         issues[str(commits[i][0])] = issue_id.group(0)
     return list(issues.keys()), issues
@@ -55,21 +56,26 @@ def save_results(fix_commit_hashes, fix_issues, changed_methods):
             methods = parse_method_signature(cms)
             issue = fix_issues[fix_commit_hashes[i]]
 
-            info[issue] = {"hash" : fix_commit_hashes[i], "fixed_methods" : methods}
+            info[issue] = {"hash": fix_commit_hashes[i], "fixed_methods": methods}
         else:
             issue = fix_issues[fix_commit_hashes[i]]
-            info[issue] = {"hash" : fix_commit_hashes[i], "fixed_methods" : []}
+            info[issue] = {"hash": fix_commit_hashes[i], "fixed_methods": []}
 
     f = open("fixed_methods.txt", 'w')
     json.dump(info, f, indent=4)
     f.close()
 
 
-if __name__ == "__main__":
-    if len(sys.argv) > 1:
-        PATH_TO_INTELLIJ = sys.argv[1]
+def main():
+    parser = argparse.ArgumentParser()
+    parser.add_argument("--intellij_path", type=str)
+    args = parser.parse_args()
+
     path_to_fix_commits = os.path.join(".", "commit_fix_hashes.txt")
     fix_commits_hashes, fix_issues = get_commits_and_issues(path_to_fix_commits)
-    changed_methods = collect_all_changed_methods(fix_commits_hashes, PATH_TO_INTELLIJ)
+    changed_methods = collect_all_changed_methods(fix_commits_hashes, args.intellij_path)
     save_results(fix_commits_hashes, fix_issues, changed_methods)
-    
+
+
+if __name__ == "__main__":
+    main()
