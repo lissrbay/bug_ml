@@ -5,6 +5,11 @@ import re
 from parser_java_kotlin import Parser
 from add_path_info import load_report
 import pickle
+import argparse
+
+parser = argparse.ArgumentParser(description='Collect code from used reports')
+parser.add_argument('data_path', type=str)
+parser.add_argument('save_path', type=str)
 
 def remove_tabs(code):
     code = list(filter(lambda x: not (x.strip()[:2] == '//'), code))
@@ -22,15 +27,13 @@ def code_fragment( bounds, code):
 
 
 def collect_code(path):
-    reports_code = []
-    reports_ids = []
+    reports_code = {}
     targets = []
-    for root, dirs, files in tqdm(os.walk(path)):
+    for root, _, _ in tqdm(os.walk(path)):
         if (root == path):
             continue
         report = load_report(root + '.json')
         all_methods_code = []
-        reports_ids.append(int(root.split('/')[-1]))
         target = []
         for frame in report['frames'][:80]:
             target.append(frame['label'])
@@ -52,16 +55,16 @@ def collect_code(path):
             except Exception:
                 all_methods_code.append(code)
         targets.append(target)
-        reports_code.append(all_methods_code)
-    return reports_code, targets, reports_ids
+        reports_code['report_id'] = all_methods_code
+    return reports_code, targets
+
 
 PATH_TO_REPORTS = os.path.join("..", "intellij_fixed_201007")
 
 if __name__ == "__main__":
     path = os.path.join(PATH_TO_REPORTS, "labeled_reports")
     path_save = os.path.join("..", "data")
-    reports_code, targets, reports_ids = collect_code(path)
+    reports_code, targets = collect_code(path)
     pickle.dump(reports_code, open(os.path.join(path_save, "reports_code")))
     pickle.dump(targets, open(os.path.join(path_save, "targets")))
-    pickle.dump(reports_ids, open(os.path.join(path_save, "reports_ids")))
 

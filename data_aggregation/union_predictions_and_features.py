@@ -26,18 +26,18 @@ def replace_exceptions(df_features):
 
 
 def make_indices(df_features):
-
     df_features['indices'] = df_features['report_id'].apply(lambda x: str(x)+'_') + df_features['method_stack_position'].apply(lambda x: str(x))
     return df_features
 
 
 def union_preds_features(preds, df_features):
     df_features = replace_exceptions(df_features)
-    df_features = make_indices(df_features, reports_ids, reports_code)
+    df_features = make_indices(df_features)
+    preds = make_indices(preds)
     df_features['indices'] = df_features['indices'].astype(str)
     preds['indices'] = preds['indices'].astype(str)  
     df_features = df_features.merge(df, on='indices', how='inner')
-
+    
     return df_features
     
     
@@ -50,8 +50,8 @@ if __name__ == "__main__":
     reports_ids = pickle.load(open(os.path.join(args.data_path,"reports_ids"), "rb"))
 
     df_features = replace_exceptions(df_features)
-    df_features = make_indices(df_features, reports_ids, reports_code)
-
+    df_features = make_indices(df_features)
+    df = make_indices(df)
 
     df_features['indices'] = df_features['indices'].astype(str)
     df['indices'] = df['indices'].astype(str)  

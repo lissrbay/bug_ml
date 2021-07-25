@@ -30,16 +30,16 @@ class FeatureExtractor:
 
     def get_features_from_files(self, path_to_reports, path_to_code, path_to_report_ids):
         self.load_code_data(path_to_code, path_to_report_ids)
-        for report_id, report_code in tqdm(zip(reports_ids, reports_code)):
+        for report_id in tqdm(self.reports_ids):
             report_path = open(os.path.join(path_to_reports, str(report_id)+".json"), 'r')
             report = json.load(report_path)
             self.report_id.append(report_id)
             for i, frame in enumerate(report['frames'][:80]):
-                self.method_len.append(len(report_code[i]))
+                self.method_len.append(len(self.reports_code[report_id][i]))
    
                 frame['class'] = report['class']
                 frame['pos'] = i
-                self.get_feature_from_code(report_code[i])
+                self.get_feature_from_code(self.reports_code[report_id][i])
                 self.get_feature_from_metadata(frame)
         
 

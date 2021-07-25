@@ -1,6 +1,6 @@
 
 from numpy.lib.arraysetops import unique
-from model import *
+from .model import *
 import os
 import pandas as pd
 from collections import Counter
@@ -10,11 +10,6 @@ from sklearn.model_selection import train_test_split
 from catboost import CatBoost
 from catboost import Pool
 
-
-parser = argparse.ArgumentParser(description='Union features from sources')
-parser.add_argument('data_path', type=str)
-parser.add_argument('save_results', type=str)
-parser.add_argument('save_model', type=str)
 
 
 catboost_params = {'loss_function':'QuerySoftMax',
@@ -46,20 +41,27 @@ def count_metrics(model, df_test):
     return results
 
 
-def train_catboost_model(train_pool, test_pool=None, save=False):
+def train_catboost_model(train_pool, test_pool=None, save=False, path=''):
     model = CatBoost(catboost_params)
     model.fit(train_pool, eval_set=test_pool)
     if save:
-        model.save_model(parser.save_model)
+        model.save_model(path)
     return model
 
+
+def load_catboost_model(path):
+    model = CatBoost(catboost_params)
+
+    return model.load_model(path)
+
+
 if __name__ == "__main__":
-    df_features = pd.read_csv(parser.data_path)
+    df_features = pd.read_csv('./data/all_features.csv')
     train_pool, test_pool, df_val = train_test_split(df_features)
-    model = train_catboost_model(train_pool, test_pool, save=True)
+    model = train_catboost_model(train_pool, test_pool, save=True, path='./cb_model')
 
     results = count_metrics(model, df_val)
-    f = open(parser.save_results, 'w')
+    f = open('./data/results_catboost', 'w')
     json.dump(results, f, indent=4)
     f.close()
 

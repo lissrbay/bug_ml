@@ -4,6 +4,7 @@ import re
 import pandas as pd
 import numpy as np
 import sys
+import pickle
 from copy import deepcopy
 
 def load_report(name):
@@ -20,68 +21,67 @@ def clean_method_name(method_name):
     method_name = method_name.replace('$', '')
     return method_name
 
-def process_report(root):
+
+def find_embedding_in_df(df, method_name):
+    code_vectors = df[df['method'] == method_name.lower()].values
+    if code_vectors.shape[0] > 0:
+        return (True, code_vectors[0, :])
+    return (False, None)
+
+
+def process_report_by_file(root, frame_limit):
     report_data = []
     method_with_bug = -1
-    flag = 0
     report = load_report(root+'.json')
-    for i, frame in enumerate(report['frames']):
+    frames_len = report['frames'][:frame_limit]
+
+    for i, frame in enumerate(report['frames'][:frame_limit]):
         if frame['label']:
             method_with_bug = i
         method_name = clean_method_name(frame['method_name'])
         file_with_method = frame['file_name']
-        if method_with_bug == i and not file_with_method:
-            break
-        print(file_with_method)
         if file_with_method:
             file_with_csv = os.path.join(root, file_with_method.split('.')[0] + '.csv')
-            if method_with_bug == i and not os.path.exists(file_with_csv):
-                break
+            print(file_with_csv, os.path.exists(file_with_csv))
+
             if os.path.exists(file_with_csv):
                 df = pd.read_csv(file_with_csv)
-                code_vector = df[df['method'] == method_name.lower()].values
-                if code_vector.shape[0] > 0:
-                    if method_with_bug == i:
-                        flag = 1
-                    report_data.append(code_vector[0, :])
+                is_success, embedding = find_embedding_in_df(df, method_name)
+                if is_success:
+                    report_data.append(embedding)
                     continue
         report_data.append(np.zeros(384))
-    return flag, report_data, method_with_bug
+    return frames_len, report_data, method_with_bug
 
 
-def process_data(path_to_files, path_to_methods):
-    report_data = []
-    report = load_report(path_to_methods)
-    for i, method_info in enumerate(report[:80]):
-        method_name = clean_method_name(method_info['method_name'])
-        file_with_method = method_info['path']
-        if file_with_method:
-            file_with_csv = os.path.join(path_to_files, file_with_method.split('/')[-1].split('.')[0] + '.csv')
-            if os.path.exists(file_with_csv):
-                df = pd.read_csv(file_with_csv, index_col=0)
-                code_vector = df[df['method'] == method_name.lower()].drop(['method'], axis=1).values
-                if code_vector.shape[0] > 0:
-                    report_data.append(code_vector[0, :])
-                    continue
-        report_data.append(np.zeros(320))
-    for i in range(len(report_data), 80):
-        report_data.append(np.zeros(320))
-    return report_data
-
-
-def match_embeddings_with_methods(path_to_report):
+def match_embeddings_with_methods(path_to_report, frame_limit):
     data = []
     labels = []
-    for root, dirs, files in os.walk(path_to_report):
+    report_ids = []
+    print(path_to_report)
+    for root, _, _ in os.walk(path_to_report):
         if not root.split('/')[-1].isnumeric():
             continue
-        flag, report_data, method_with_bug = process_report(root)
-        if flag:
+        report_id = root.split('/')[-1]
+        if not report_id:
+            continue
+        _, report_data, method_with_bug = process_report_by_file(root, frame_limit)
+        if method_with_bug != -1:
+            report_ids.append(report_id)
             data.append(report_data)
             frames_labels = np.zeros(len(report_data))
             frames_labels[method_with_bug] = 1
             labels.append(frames_labels)
-    return data, labels
+
+    return data, labels, report_ids
+
+
+def match_embeddings_with_methods_from_df(df, method_meta):
+    if df is not None:
+        is_success, embedding = find_embedding_in_df(df, method_meta['method_name'])
+        if is_success:
+            return embedding
+    return np.zeros(384)
 
 
 PATH_TO_REPORTS = os.path.join("..", "intellij_fixed_201007")
@@ -97,6 +97,7 @@ if __name__ == "__main__":
         frame_limit = int(sys.argv[3])
 
     path_to_report = os.path.join(path_to_report, "labeled_reports")
-    data, labels = match_embeddings_with_methods(path_to_report)
+    data, labels, report_ids = match_embeddings_with_methods(path_to_report, frame_limit)
     np.save(os.path.join("..", "data", 'X(' + embeddings_type_dir + ')'), data) 
     np.save(os.path.join("..", "data", 'y(' + embeddings_type_dir + ')'), labels) 
+    pickle.dump(report_ids, open(os.path.join('..', 'data', "reports_ids"), 'wb'))
