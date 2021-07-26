@@ -45,8 +45,6 @@ def process_report_by_file(root, frame_limit):
         file_with_method = frame['file_name']
         if file_with_method:
             file_with_csv = os.path.join(root, file_with_method.split('.')[0] + '.csv')
-            print(file_with_csv, os.path.exists(file_with_csv))
-
             if os.path.exists(file_with_csv):
                 df = pd.read_csv(file_with_csv)
                 is_success, embedding = find_embedding_in_df(df, method_name)
@@ -61,7 +59,6 @@ def match_embeddings_with_methods(path_to_report, frame_limit):
     data = []
     labels = []
     report_ids = []
-    print(path_to_report)
     for root, _, _ in os.walk(path_to_report):
         if not root.split('/')[-1].isnumeric():
             continue
@@ -89,17 +86,19 @@ def match_embeddings_with_methods_from_df(df, method_meta):
 
 def parse_args():
     parser = argparse.ArgumentParser()
+    parser.add_argument("--embeddings_type", type=str, default='code2seq')
+    parser.add_argument("--reports_path", type=str, default='../intellij_fixed_201007')
+    parser.add_argument("--frame_limit", type=int, default=80)
+
+    return parser.parse_args()
+
 
 if __name__ == "__main__":
-    frame_limit = FILES_LIMIT
-    embeddings_type_dir = "code2seq"
-    path_to_report = PATH_TO_REPORTS
-    if len(sys.argv) > 1:
-        path_to_report = sys.argv[1]
-        embeddings_type_dir = sys.argv[2]
-        frame_limit = int(sys.argv[3])
-
-    path_to_report = os.path.join(path_to_report, "labeled_reports")
+    args = parse_args()
+    embeddings_type_dir = args.embeddings_type
+    reports_path = args.reports_path
+    frame_limit = args.frame_limit
+    path_to_report = os.path.join(reports_path, "labeled_reports")
     data, labels, report_ids = match_embeddings_with_methods(path_to_report, frame_limit)
     np.save(os.path.join("..", "data", 'X(' + embeddings_type_dir + ')'), data) 
     np.save(os.path.join("..", "data", 'y(' + embeddings_type_dir + ')'), labels) 
