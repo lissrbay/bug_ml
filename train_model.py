@@ -5,7 +5,9 @@ import data_aggregation.get_features
 from models.catboost_model import train_test_split, train_catboost_model, count_metrics
 import pickle
 from data_aggregation.union_predictions_and_features import union_preds_features
-
+parser = argparse.ArgumentParser()
+parser.add_argument("--reports_path", type=str, default='../intellij_fixed_201007')
+parser.add_argument("--frame_limit", type=int, default=80)
 class BugLocalizationModelTrain:
     def __init__(self, reports_path='', embeddings_path='./data/X(code2seq).npy', labels_path='./data/y(code2seq).npy',
                  report_ids_path='./data/reports_ids', report_code_path='./data/reports_code', frames_limit=80):
@@ -30,7 +32,7 @@ class BugLocalizationModelTrain:
 
 
     def fit_model_from_params(self, params=None, use_best_params=False, path_to_results='.', save_path='./lstm_model'):
-        blm = BugLocalizationModel(embeddings_path='./data/X.npy', labels_path='./data/y.npy')
+        blm = BugLocalizationModel(embeddings_path='./data/X(code2seq).npy', labels_path='./data/y(code2seq).npy')
         model = LSTMTagger
 
         if use_best_params:
@@ -58,7 +60,7 @@ class BugLocalizationModelTrain:
         reports_ids=pickle.load(open(self.path_to_report_ids, "rb"))
         reports_ids_ = []
         for i in reports_ids:
-            for j in range(self.frames_limit):
+            for _ in range(self.frames_limit):
                 reports_ids_.append(i)
         print(len(reports_ids_), len(prediction))
         return pd.DataFrame({'report_id':reports_ids_, 
@@ -82,7 +84,7 @@ class BugLocalizationModelTrain:
 
 
 if __name__ == "__main__":
-    path_to_report = os.path.join("./intellij_fixed_201007", "labeled_reports")
+    path_to_report = os.path.join(parser.reports_path, "labeled_reports")
     api = BugLocalizationModelTrain(reports_path=path_to_report)
     params = Parameters(0.01, 10, optim.Adam, 0.5, 5, 60)
     model = api.fit_model_from_params([params], save_path='./data/lstm')
