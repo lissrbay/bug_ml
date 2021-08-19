@@ -1,7 +1,7 @@
 import argparse
 import json
 import os
-
+from tqdm import tqdm
 import numpy as np
 import sys
 import pickle
@@ -25,7 +25,7 @@ def clean_method_name(method_name):
 
 
 def find_embedding_in_df(df, method_name):
-    code_vectors = df[df['method'] == method_name.lower()].values
+    code_vectors = df[df['method'] == method_name.lower()].drop(['method'], axis=1).values
     if code_vectors.shape[0] > 0:
         return (True, code_vectors[0, :])
     return (False, None)
@@ -46,12 +46,15 @@ def process_report_by_file(root, frame_limit):
         if file_with_method:
             file_with_csv = os.path.join(root, file_with_method.split('.')[0] + '.csv')
             if os.path.exists(file_with_csv):
-                df = pd.read_csv(file_with_csv)
+                df = pd.read_csv(file_with_csv, index_col=0)
                 is_success, embedding = find_embedding_in_df(df, method_name)
                 if is_success:
                     report_data.append(embedding)
                     continue
-        report_data.append(np.zeros(384))
+        report_data.append(np.zeros(320))
+
+    for i in range(max(frame_limit - len(report_data), 0)):
+        report_data.append(np.zeros(320))
     return frames_len, report_data, method_with_bug
 
 
@@ -59,7 +62,7 @@ def match_embeddings_with_methods(path_to_report, frame_limit):
     data = []
     labels = []
     report_ids = []
-    for root, _, _ in os.walk(path_to_report):
+    for root, _, _ in tqdm(os.walk(path_to_report)):
         if not root.split('/')[-1].isnumeric():
             continue
         report_id = root.split('/')[-1]
@@ -81,7 +84,7 @@ def match_embeddings_with_methods_from_df(df, method_meta):
         is_success, embedding = find_embedding_in_df(df, method_meta['method_name'])
         if is_success:
             return embedding
-    return np.zeros(384)
+    return np.zeros(320)
 
 
 def parse_args():

@@ -12,14 +12,19 @@ parser.add_argument('save_path', type=str)
 
 
 def replace_exceptions(df_features):
-    exceptions = df_features['exception_class']
-    exceptions = [eval(e) for e in exceptions]
+    exceptions_ = df_features['exception_class'].values
+    exceptions = []
+    for e in exceptions_:
+        try:
+            exceptions.append(e)
+        except Exception:
+            exceptions.append([])
     all_exceptions = []
     for exceptions_list in exceptions:
         for e in exceptions_list:
             all_exceptions.append(e)
     exceptions, _ = zip(*Counter(all_exceptions).most_common(100))
-    df_features['exception_class_'] = df_features['exception_class'].apply(eval)
+    df_features['exception_class_'] = df_features['exception_class']#.apply(eval)
     for e in exceptions:
         df_features[e] = df_features['exception_class_'].apply(lambda x: 1 if e in x else 0)
     return df_features
@@ -35,9 +40,11 @@ def union_preds_features(preds, df_features):
     df_features = make_indices(df_features)
     preds = make_indices(preds)
     df_features['indices'] = df_features['indices'].astype(str)
-    preds['indices'] = preds['indices'].astype(str)  
-    df_features = df_features.merge(df, on='indices', how='inner')
-    
+    preds['indices'] = preds['indices'].astype(str)
+    preds = preds.drop(['report_id'], axis=1)
+    print(df_features.shape, preds.shape)
+
+    df_features = df_features.merge(preds, on='indices', how='inner')
     return df_features
     
     

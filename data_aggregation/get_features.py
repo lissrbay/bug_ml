@@ -33,12 +33,12 @@ class FeatureExtractor:
         for report_id in tqdm(self.reports_ids):
             report_path = open(os.path.join(path_to_reports, str(report_id)+".json"), 'r')
             report = json.load(report_path)
-            self.report_id.append(report_id)
             for i, frame in enumerate(report['frames'][:80]):
                 self.method_len.append(len(self.reports_code[report_id][i]))
    
                 frame['class'] = report['class']
                 frame['pos'] = i
+                frame['id'] = report_id
                 self.get_feature_from_code(self.reports_code[report_id][i])
                 self.get_feature_from_metadata(frame)
         
@@ -55,12 +55,12 @@ class FeatureExtractor:
         self.has_runs.append("run" in method_name)
         self.has_dollars.append("$" in method_name)
         self.is_parallel.append("Thread"  in method_name)
+        self.method_file_position.append(method_meta['line_number'])
         self.is_java_standart.append(method_name[:4] == 'java')
         self.method_stack_position.append(method_meta['pos'])
         self.label.append(method_meta['label'])
-        if 'id' in method_meta:
-            self.report_id.append(method_meta['id'])
-
+        self.report_id.append(method_meta['id'])
+        self.method_name.append(method_name)
 
     def to_pandas(self):
         df = pd.DataFrame({ "is_java_standart":self.is_java_standart,
@@ -75,7 +75,8 @@ class FeatureExtractor:
             'label':self.label,
             'has_no_code':self.has_no_code,
             'newObjectsCount':self.newObjectsCount,
-            'is_parallel':self.is_parallel})
+            'is_parallel':self.is_parallel,
+            "report_id":self.report_id})
         return df
 
 

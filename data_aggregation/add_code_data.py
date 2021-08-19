@@ -8,7 +8,7 @@ import pickle
 import argparse
 
 parser = argparse.ArgumentParser(description='Collect code from used reports')
-parser.add_argument('data_path', type=str)
+parser.add_argument('reports_path', type=str)
 parser.add_argument('save_path', type=str)
 
 def remove_tabs(code):
@@ -55,7 +55,8 @@ def collect_code(path):
             except Exception:
                 all_methods_code.append(code)
         targets.append(target)
-        reports_code['report_id'] = all_methods_code
+        report_id = root.split('/')[-1]
+        reports_code[report_id] = all_methods_code
     return reports_code, targets
 
 
@@ -65,6 +66,6 @@ if __name__ == "__main__":
     path = os.path.join(PATH_TO_REPORTS, "labeled_reports")
     path_save = os.path.join("..", "data")
     reports_code, targets = collect_code(path)
-    pickle.dump(reports_code, open(os.path.join(path_save, "reports_code")))
-    pickle.dump(targets, open(os.path.join(path_save, "targets")))
+    pickle.dump(reports_code, open(os.path.join(path_save, "reports_code"), "wb"))
+    pickle.dump(targets, open(os.path.join(path_save, "targets"), "wb"))
 

@@ -18,10 +18,11 @@ catboost_params = {'loss_function':'QuerySoftMax',
                     'metric_period':100, 'iterations':1000}
 
 
-def train_test_split(df_features, fraction = 0.9):
+def train_test_splitting(df_features, fraction = 0.9):
     all_reports = df_features['report_id'].unique()
     reports_count = all_reports.shape[0]
     train_reports, test_reports = (all_reports[:int(reports_count*fraction)], all_reports[int(reports_count*fraction):])
+    print(train_reports.shape, test_reports.shape, df_features.shape)
     df_val = df_features[df_features['report_id'].isin(test_reports)]
     df_features = df_features[df_features['report_id'].isin(train_reports)]
     X, test_X, y, test_y = train_test_split(df_features.drop(['label', 'method_name', 'indices', 'exception_class', 'exception_class_'], axis=1), df_features['label'], 
@@ -57,7 +58,7 @@ def load_catboost_model(path):
 
 if __name__ == "__main__":
     df_features = pd.read_csv('./data/all_features.csv')
-    train_pool, test_pool, df_val = train_test_split(df_features)
+    train_pool, test_pool, df_val = train_test_splittings(df_features)
     model = train_catboost_model(train_pool, test_pool, save=True, path='./cb_model')
 
     results = count_metrics(model, df_val)

@@ -2,9 +2,11 @@ from models.model import *
 import os
 import torch.optim as optim
 import data_aggregation.get_features
-from models.catboost_model import train_test_split, train_catboost_model, count_metrics
+from models.catboost_model import train_test_splitting, train_catboost_model, count_metrics
 import pickle
 from data_aggregation.union_predictions_and_features import union_preds_features
+import argparse
+
 parser = argparse.ArgumentParser()
 parser.add_argument("--reports_path", type=str, default='../intellij_fixed_201007')
 parser.add_argument("--frame_limit", type=int, default=80)
@@ -32,7 +34,7 @@ class BugLocalizationModelTrain:
 
 
     def fit_model_from_params(self, params=None, use_best_params=False, path_to_results='.', save_path='./lstm_model'):
-        blm = BugLocalizationModel(embeddings_path='./data/X(code2seq).npy', labels_path='./data/y(code2seq).npy')
+        blm = BugLocalizationModel(self.path_to_embeddings, self.path_to_labels)
         model = LSTMTagger
 
         if use_best_params:
@@ -59,32 +61,35 @@ class BugLocalizationModelTrain:
     def model_prediction_to_df(self, prediction):
         reports_ids=pickle.load(open(self.path_to_report_ids, "rb"))
         reports_ids_ = []
+        poses = []
         for i in reports_ids:
-            for _ in range(self.frames_limit):
+            for j in range(self.frames_limit):
                 reports_ids_.append(i)
-        print(len(reports_ids_), len(prediction))
+                poses.append(j)
         return pd.DataFrame({'report_id':reports_ids_, 
-        'method_stack_position': [list(range(80)) for id_ in reports_ids], 'lstm_prediction':prediction})
+        'method_stack_position': poses, 'lstm_prediction':prediction.detach().numpy()})
 
     def collect_data_for_catboost(self):
         code_features_df = self.get_code_features()
         lstm_prediction = self.get_lstm_train_preds()
         df_preds = self.model_prediction_to_df(lstm_prediction)
         df_all = union_preds_features(df_preds, code_features_df)
+
         return df_all
 
     def fit_catboost(self):
         df_features = self.collect_data_for_catboost()
-        train_pool, test_pool, df_val = train_test_split(df_features)
+        train_pool, test_pool, df_val = train_test_splitting(df_features)
         model = train_catboost_model(train_pool, test_pool, save=True, path='./cb_model')
-        count_metrics(df_val)
+        count_metrics(model, df_val)
         self.cb_model = model
 
         return model
 
 
 if __name__ == "__main__":
-    path_to_report = os.path.join(parser.reports_path, "labeled_reports")
+    args = parser.parse_args()
+    path_to_report = os.path.join(args.reports_path, "labeled_reports")
     api = BugLocalizationModelTrain(reports_path=path_to_report)
     params = Parameters(0.01, 10, optim.Adam, 0.5, 5, 60)
     model = api.fit_model_from_params([params], save_path='./data/lstm')

@@ -19,8 +19,8 @@ RunResult = namedtuple("RunResult", ['train_history', 'val_history'])
 Parameters = namedtuple("Parameters", ['lr', 'epoch', 'optim', 'anneal_coef', 'anneal_epoch', 'dim'])
 
 def read_data(embeddings_path='X.npy', labels_path='y.npy', reports_path=None):
-    X = np.load(embeddings_path)
-    y = np.load(labels_path)
+    X = np.load(embeddings_path, allow_pickle=True)
+    y = np.load(labels_path, allow_pickle=True)
     if reports_path is None:
         return X, y
     reports_used = np.load(reports_path)
