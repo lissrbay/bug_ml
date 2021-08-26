@@ -3,7 +3,6 @@ import os
 from tqdm import tqdm
 import numpy as np
 import sys
-PATH_TO_REPORTS = os.path.join("..", "intellij_fixed_201007")
 
 def baseline_accuracy(path_to_report):
     c = 0

@@ -15,7 +15,9 @@ def get_changed_methods_from_commits(next_commit, path):
     return changed_methods
 
 
-def get_commits_and_issues(path):
+def get_commits_and_issues():
+    path_to_fix_commits = os.path.join(".", "data", "commit_fix_hashes.txt")
+
     f = open(path, "r")
     commits_info = "".join(f.readlines())
     pattern_commit = re.compile("(?<=\ncommit )\w{40,40}")
@@ -61,18 +63,13 @@ def save_results(fix_commit_hashes, fix_issues, changed_methods):
             issue = fix_issues[fix_commit_hashes[i]]
             info[issue] = {"hash": fix_commit_hashes[i], "fixed_methods": []}
 
-    f = open("fixed_methods.txt", 'w')
+    f = open(os.path.join(".", "data", "fixed_methods.txt"), 'w')
     json.dump(info, f, indent=4)
     f.close()
 
 
 def main():
-    parser = argparse.ArgumentParser()
-    parser.add_argument("--intellij_path", type=str)
-    args = parser.parse_args()
-
-    path_to_fix_commits = os.path.join(".", "commit_fix_hashes.txt")
-    fix_commits_hashes, fix_issues = get_commits_and_issues(path_to_fix_commits)
+    fix_commits_hashes, fix_issues = get_commits_and_issues()
     changed_methods = collect_all_changed_methods(fix_commits_hashes, args.intellij_path)
     save_results(fix_commits_hashes, fix_issues, changed_methods)
 

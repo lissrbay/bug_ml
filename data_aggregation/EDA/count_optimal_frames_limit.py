@@ -58,12 +58,7 @@ def count_quantiles(counts, quantiles=[0.95, 0.99]):
     return borders
 
 
-def main():
-    parser = ArgumentParser()
-    parser.add_argument("--reports_path", type=str)
-    args = parser.parse_args()
-
-    reports_path = os.path.join(args.reports_path, 'labeled_reports')
+def main(reports_path):
     counts = count_labels_on_positions(reports_path)
     all_values = sum([[j] * i for j, i in counts], [])
 
@@ -74,4 +69,9 @@ def main():
 
 
 if __name__ == '__main__':
-    main()
+    parser = ArgumentParser()
+    parser.add_argument("--reports_path", type=str)
+    args = parser.parse_args()
+    reports_path = os.path.join(args.reports_path, 'labeled_reports')
+
+    main(reports_path)

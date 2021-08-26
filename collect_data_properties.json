@@ -1,0 +1,6 @@
+{
+    "reports_path":"./intellij_fixed_201007",
+    "intellij_path":"./intellij-community",
+    "embeddings_type":"code2seq",
+    "files_limit":80
+}

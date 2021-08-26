@@ -1,0 +1,9 @@
+{
+    "reports_path": "",
+    "frame_limit": 80,
+    "embeddings_path": "./data/X(code2seq).npy",
+    "labels_path": "./data/y(code2seq).npy",
+    "report_ids_path": "'./data/reports_ids'",
+    "report_code_path": "./data/reports_code",
+    "save_dir": "./data"
+}

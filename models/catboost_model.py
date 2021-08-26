@@ -56,14 +56,4 @@ def load_catboost_model(path):
     return model.load_model(path)
 
 
-if __name__ == "__main__":
-    df_features = pd.read_csv('./data/all_features.csv')
-    train_pool, test_pool, df_val = train_test_splittings(df_features)
-    model = train_catboost_model(train_pool, test_pool, save=True, path='./cb_model')
-
-    results = count_metrics(model, df_val)
-    f = open('./data/results_catboost', 'w')
-    json.dump(results, f, indent=4)
-    f.close()
-
 

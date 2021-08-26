@@ -99,12 +99,8 @@ def parse_args():
     return parser.parse_args()
 
 
-def main():
-    args = parse_args()
+def main(intellij_path, reports_path, files_limit):
 
-    intellij_path = args.intellij_path
-    reports_path = args.reports_path
-    files_limit = args.files_limit
 
     repo = Repo(intellij_path, odbt=db.GitDB)
 
@@ -116,4 +112,9 @@ def main():
 
 
 if __name__ == "__main__":
+    args = parse_args()
+
+    intellij_path = args.intellij_path
+    reports_path = args.reports_path
+    files_limit = args.files_limit
     main()

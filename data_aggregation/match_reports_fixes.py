@@ -98,15 +98,14 @@ def label_reports(issues_info, path_to_report):
                 print(file)
 
 
-def main():
-    parser = ArgumentParser()
-    parser.add_argument("--reports_path", type=str)
-    args = parser.parse_args()
-
-    path_to_reports = os.path.join(args.reports_path, "reports")
-    issues_info = collect_info(args.reports_path)
+def main(reports_path):
+    path_to_reports = os.path.join(reports_path, "reports")
+    issues_info = collect_info(reports_path)
     label_reports(issues_info, path_to_reports)
 
 
 if __name__ == "__main__":
-    main()
+    parser = ArgumentParser()
+    parser.add_argument("--reports_path", type=str)
+    args = parser.parse_args()
+    main(args.reports_path)

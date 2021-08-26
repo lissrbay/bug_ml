@@ -1,18 +1,17 @@
 from models.model import *
 import os
+import time
 import torch.optim as optim
 import data_aggregation.get_features
 from models.catboost_model import train_test_splitting, train_catboost_model, count_metrics
 import pickle
 from data_aggregation.union_predictions_and_features import union_preds_features
-import argparse
+import json
 
-parser = argparse.ArgumentParser()
-parser.add_argument("--reports_path", type=str, default='../intellij_fixed_201007')
-parser.add_argument("--frame_limit", type=int, default=80)
+
 class BugLocalizationModelTrain:
-    def __init__(self, reports_path='', embeddings_path='./data/X(code2seq).npy', labels_path='./data/y(code2seq).npy',
-                 report_ids_path='./data/reports_ids', report_code_path='./data/reports_code', frames_limit=80):
+    def __init__(self, reports_path, embeddings_path, labels_path,
+                 report_ids_path, report_code_path, frames_limit):
         self.model = None
         self.params = None
         self.path_to_embeddings = embeddings_path
@@ -33,7 +32,7 @@ class BugLocalizationModelTrain:
         self.model = blm
 
 
-    def fit_model_from_params(self, params=None, use_best_params=False, path_to_results='.', save_path='./lstm_model'):
+    def fit_model_from_params(self, params=None, use_best_params=False, path_to_results='.', save_dir=None, model_name=None):
         blm = BugLocalizationModel(self.path_to_embeddings, self.path_to_labels)
         model = LSTMTagger
 
@@ -43,6 +42,10 @@ class BugLocalizationModelTrain:
         else:
             best_params = params
         blm.train(best_params, model)
+        if save_dir is None:
+            save_dir = '.'
+        if model_name is None:
+            model_name = 'lstm_' + str(hash(time.time()))
         blm.save_model(save_path)
         self.model = blm
         return blm
@@ -77,9 +80,13 @@ class BugLocalizationModelTrain:
 
         return df_all
 
-    def fit_catboost(self):
+    def fit_catboost(self, save_dir=None, model_name=None):
         df_features = self.collect_data_for_catboost()
         train_pool, test_pool, df_val = train_test_splitting(df_features)
+        if save_dir is None:
+            save_dir = '.'
+        if model_name is None:
+            model_name = "cb_model_" + str(hash(time.time()))
         model = train_catboost_model(train_pool, test_pool, save=True, path='./cb_model')
         count_metrics(model, df_val)
         self.cb_model = model
@@ -88,9 +95,14 @@ class BugLocalizationModelTrain:
 
 
 if __name__ == "__main__":
-    args = parser.parse_args()
-    path_to_report = os.path.join(args.reports_path, "labeled_reports")
-    api = BugLocalizationModelTrain(reports_path=path_to_report)
+    args = json.load(open("train_properties.json", "r"))
+    path_to_report = os.path.join(args["reports_path"], "labeled_reports")
+    api = BugLocalizationModelTrain(reports_path=path_to_report,
+                                    embeddings_path=args['embeddings_path'], 
+                                    labels_path=args['labels_path'],
+                                    report_ids_path=args['report_ids_path'], 
+                                    report_code_path=args['report_code_path'],
+                                    frames_limit=80)
     params = Parameters(0.01, 10, optim.Adam, 0.5, 5, 60)
-    model = api.fit_model_from_params([params], save_path='./data/lstm')
-    cb_model = api.fit_catboost()
+    model = api.fit_model_from_params([params], save_dir=args.get("save_dir"), model_name=args.get("lstm_model_name"))
+    cb_model = api.fit_catboost(save_dir=args.get("save_dir"), model_name=args.get("cb_model_name"))
