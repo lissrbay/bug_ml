@@ -3,15 +3,8 @@
 Структура проекта:
 
 - В папке data_aggregation/ лежат скрипты, использовавшиеся для сбора и обработки данных.
-    - parser_java_kotlin.py, get_all_changed_methods.py, get_java_methods.py - находят изменившиеся методы в заданном коммите при помощи парсинга файлов в текущем и предыдущем коммите
-    - add_path_info.py, match_reports_fixes.py, collect_sources.py - дополняют существующие стеки вызовов разметкой, путями до файлов с кодом и подтягивают актуальные на момент коммита файлы с методами
-    - add_w2v_embeddings.py - добавляем эмбеддинги code2vec на основании имени метода
 - В папке embeddings/ содержатся файлы, добавляя которые к копии репозитория code2vec/code2seq можно получить соответствующие эмбеддинги при запуске по соответствующей инструкции к репозиториям
-    - match_embeddings_with_methods.py - соединяет полученные эмбеддинги и информацию о стеках вызовов в единую структуру
 - В папке models/ находятся различные модели, полученные в ходе экспериментов. 
-    - baseline.py - наивный бейзлайн - виноват всегда верхний метод в стеке
-    - model.py - модель на основе lstm
-    - catboost_model.py - модель, ранжирующая результаты предсказания lstm
 
 Как пользоваться:
 
@@ -29,9 +22,25 @@
     - "report_code_path" - путь к коду методов в стектрейсах,
     - "save_dir": "./data" - путь к папке где будут сохранены модели
     
+### Как поставить pycode2seq
+
+1. conda env create -f ./env.yml --force
+2. pip install code2seq==0.0.2
+3. pip install -r requirements.txt
+4. pip install --no-deps pycode2seq==0.0.4
+
+### Как запустить тест апи
+
+    model = Code2Seq.load("java") # запускаем pycode2seq модельку
+    stacktrace = json.load(open("ex_api_stacktrace.json", "r")) # загружаем стектрейс с кодом внутри в base64 формате
+    api = BugLocalizationModelAPI(lstm_model_path='./data/lstm_20210909_1459', cb_model_path='./data/cb_model_20210909_1459') # пути до обученных моделек
+    top_k_pred, scores = api.predict(stacktrace, pred_type='all') # предикт номеров подозрительных методов и их скоры от модельки
+
 ### Used libraries
 
 * GitPython==3.1.8
 * PyTorch
+* code2seq==0.0.2
+* pycode2seq==0.0.4
 
 
