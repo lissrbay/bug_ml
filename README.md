@@ -25,12 +25,13 @@
 ### Как поставить pycode2seq
 
 1. conda env create -f ./env.yml --force
-2. pip install code2seq==0.0.2
-3. pip install -r requirements.txt
-4. pip install --no-deps pycode2seq==0.0.4
+2. conda activate bug_ml
+3. pip install code2seq==0.0.2
+4. pip install -r requirements.txt
+5. pip install --no-deps pycode2seq==0.0.4
 
 ### Как запустить тест апи
-
+Предобученные модели лежат в data/
     model = Code2Seq.load("java") # запускаем pycode2seq модельку
     stacktrace = json.load(open("ex_api_stacktrace.json", "r")) # загружаем стектрейс с кодом внутри в base64 формате
     api = BugLocalizationModelAPI(lstm_model_path='./data/lstm_20210909_1459', cb_model_path='./data/cb_model_20210909_1459') # пути до обученных моделек
