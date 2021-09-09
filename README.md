@@ -32,6 +32,7 @@
 
 ### Как запустить тест апи
 Предобученные модели лежат в data/
+
     model = Code2Seq.load("java") # запускаем pycode2seq модельку
     stacktrace = json.load(open("ex_api_stacktrace.json", "r")) # загружаем стектрейс с кодом внутри в base64 формате
     api = BugLocalizationModelAPI(lstm_model_path='./data/lstm_20210909_1459', cb_model_path='./data/cb_model_20210909_1459') # пути до обученных моделек
