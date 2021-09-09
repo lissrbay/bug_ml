@@ -33,9 +33,7 @@ class FeatureExtractor:
         for report_id in tqdm(self.reports_ids):
             report_path = open(os.path.join(path_to_reports, str(report_id)+".json"), 'r')
             report = json.load(report_path)
-            for i, frame in enumerate(report['frames'][:80]):
-                self.method_len.append(len(self.reports_code[report_id][i]))
-   
+            for i, frame in enumerate(report['frames'][:80]):   
                 frame['class'] = report['class']
                 frame['pos'] = i
                 frame['id'] = report_id
@@ -47,7 +45,7 @@ class FeatureExtractor:
         self.method_tokens_count.append(len(method_code.split()))
         self.newObjectsCount.append(len(re.findall(r' new ', method_code)))
         self.has_no_code.append(len(method_code) == 0)
-
+        self.method_len.append(len(method_code))
     
     def get_feature_from_metadata(self, method_meta):
         self.exception_class.append(method_meta['class'])
@@ -59,7 +57,7 @@ class FeatureExtractor:
         self.is_java_standart.append(method_name[:4] == 'java')
         self.method_stack_position.append(method_meta['pos'])
         self.label.append(method_meta['label'])
-        self.report_id.append(method_meta['id'])
+        self.report_id.append(method_meta['id'] if 'id' in method_meta else 0)
         self.method_name.append(method_name)
 
     def to_pandas(self):

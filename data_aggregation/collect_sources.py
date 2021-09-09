@@ -5,7 +5,7 @@ import re
 from git import Repo, db
 from tqdm import tqdm
 
-from add_path_info import load_report, create_subfolder
+from .add_path_info import load_report, create_subfolder
 
 
 def remove_unused_begin(code):
@@ -39,17 +39,13 @@ def get_sources_for_report(repo, report, commit, full_save_path, file_limit=80):
             break
         if frame['path'] != '':
             diff_file = frame['path']
-            code = get_file_by_commit(repo, commit + "~1", diff_file)
-            f = open(os.path.join(full_save_path, frame['file_name']), 'w', encoding="utf-8")
-            f.write(code)
-            f.close()
-
-
-def get_sources_for_path(repo, path, full_save_path):
-    code = get_file_by_commit(repo, "HEAD", path)
-    f = open(os.path.join(full_save_path, path), 'w', encoding="utf-8")
-    f.write(code)
-    f.close()
+            try:
+                code = get_file_by_commit(repo, commit + "~1", diff_file)
+                f = open(os.path.join(full_save_path, frame['file_name']), 'w', encoding="utf-8")
+                f.write(code)
+                f.close()
+            except Exception:
+                print(os.path.join(full_save_path, frame['file_name']))
 
 
 def collect_sources_for_reports(repo, save_path, path_to_reports, file_limit=80):
@@ -59,9 +55,10 @@ def collect_sources_for_reports(repo, save_path, path_to_reports, file_limit=80)
         for file in tqdm(files):
             path_to_file = os.path.join(path_to_reports, file)
             report = load_report(path_to_file)
-            commit = report['hash']
-            if commit == "":
+            if not('hash' in report) or report['hash'] == "":
                 continue
+            commit = report['hash']
+
             full_save_path = os.path.join(save_path, str(report['id']))
             create_subfolder(full_save_path)
 
@@ -101,4 +98,4 @@ if __name__ == "__main__":
     intellij_path = args.intellij_path
     reports_path = args.reports_path
     files_limit = args.files_limit
-    main()
+    main(intellij_path, reports_path, files_limit)

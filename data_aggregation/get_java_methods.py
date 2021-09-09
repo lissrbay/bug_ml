@@ -6,7 +6,7 @@ import os.path
 import re
 import sys
 import glob
-from parser_java_kotlin import Parser
+from .parser_java_kotlin import Parser
 from pathlib import Path
 from tqdm import tqdm
 
@@ -26,17 +26,21 @@ class ChangedMethodsFinder:
         except Exception:
             return['error']
 
+    def is_match_lang_ext(self, filename):
+        return (re.match(self.file_extension['java'], filename) or re.match(self.file_extension['kotlin'], filename))
 
-    def collect_modified_files_last_two_commits(self, extension='.*.java', commits = ["HEAD", "HEAD~1"]):
+
+    def collect_modified_files_last_two_commits(self,  commits = ["HEAD", "HEAD~1"]):
         commit_dev = self.repo.commit(commits[0])
         commit_origin_dev = self.repo.commit(commits[1])
         diff_index = commit_origin_dev.diff(commit_dev)
         diff_files = []
         for diff_item in diff_index.iter_change_type('M'):
             diff_files.append(diff_item.b_path)
-        diff_files = [f for f in diff_files if re.match(extension, f) and not re.search('auto_generated', f)]
-        if len(diff_files) > 10:
-            return []
+            if len(diff_files) > 20:
+                return []
+        diff_files = [f for f in diff_files if self.is_match_lang_ext(f) and not re.search('auto_generated', f)]
+
         return diff_files
 
 
@@ -97,9 +101,7 @@ class ChangedMethodsFinder:
         return ast
 
 
-    def find_changed_methods_by_language(self, language = 'java', commits = ["HEAD", "HEAD~1"]):
-        extension = self.file_extension[language]
-        diff_files = self.collect_modified_files_last_two_commits(extension, commits)
+    def find_changed_methods_by_language(self, language='java', diff_files=[], commits=["HEAD", "HEAD~1"]):
         self.trees_a, self.trees_b = dict(), dict()
         self.codes_a, self.codes_b = dict(), dict()
         all_changed_methods = set()
@@ -115,8 +117,9 @@ class ChangedMethodsFinder:
 
     def find_changed_methods(self, path='.', commits = ["HEAD", "HEAD~1"]):
         self.open_repo(path)
-        java_changed_methods = self.find_changed_methods_by_language('java', commits)
-        kotlin_changed_methods = self.find_changed_methods_by_language('kotlin', commits)
+        diff_files = self.collect_modified_files_last_two_commits(commits)
+        java_changed_methods = self.find_changed_methods_by_language('java', diff_files, commits)
+        kotlin_changed_methods = self.find_changed_methods_by_language('kotlin', diff_files, commits)
         return java_changed_methods.union(kotlin_changed_methods)
 
 

@@ -59,6 +59,8 @@ def count_quantiles(counts, quantiles=[0.95, 0.99]):
 
 
 def main(reports_path):
+    reports_path = os.path.join(reports_path, 'labeled_reports')
+
     counts = count_labels_on_positions(reports_path)
     all_values = sum([[j] * i for j, i in counts], [])
 

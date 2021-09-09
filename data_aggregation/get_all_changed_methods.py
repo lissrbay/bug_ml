@@ -1,3 +1,4 @@
+import sys
 import argparse
 import json
 import os
@@ -6,11 +7,10 @@ from collections import defaultdict
 
 from tqdm import tqdm
 
-from get_java_methods import ChangedMethodsFinder
-
+from .get_java_methods import ChangedMethodsFinder
+cmf = ChangedMethodsFinder()
 
 def get_changed_methods_from_commits(next_commit, path):
-    cmf = ChangedMethodsFinder()
     changed_methods = cmf.find_changed_methods(path, [next_commit + '~1', next_commit])
     return changed_methods
 
@@ -18,7 +18,7 @@ def get_changed_methods_from_commits(next_commit, path):
 def get_commits_and_issues():
     path_to_fix_commits = os.path.join(".", "data", "commit_fix_hashes.txt")
 
-    f = open(path, "r")
+    f = open(path_to_fix_commits, "r")
     commits_info = "".join(f.readlines())
     pattern_commit = re.compile("(?<=\ncommit )\w{40,40}")
     pattern_issue = re.compile("(?<=EA-)\d+")
@@ -68,9 +68,9 @@ def save_results(fix_commit_hashes, fix_issues, changed_methods):
     f.close()
 
 
-def main():
+def main(intellij_path):
     fix_commits_hashes, fix_issues = get_commits_and_issues()
-    changed_methods = collect_all_changed_methods(fix_commits_hashes, args.intellij_path)
+    changed_methods = collect_all_changed_methods(fix_commits_hashes, intellij_path)
     save_results(fix_commits_hashes, fix_issues, changed_methods)
 
 

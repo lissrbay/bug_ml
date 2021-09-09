@@ -12,7 +12,7 @@ def list_files_in_commit(commit, repo):
         ['git', 'ls-tree', '-r', '--name-only', commit.hexsha]).split()
     java_files = defaultdict(list)
     for file in configFiles:
-        if file.endswith('.java'):
+        if file.endswith('.java') or file.endswith('.kt'):
             java_files[file.split('/')[-1]].append(file)
 
     return java_files

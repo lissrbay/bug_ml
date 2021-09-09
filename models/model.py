@@ -121,6 +121,7 @@ def do_epoch(model, criterion, data, batch_size, optimizer=None, name=None, top_
     return epoch_loss / batches_count, correct_count / sum_count
 
 def bug_probability(y_pred):
+    y_pred = y_pred.detach().numpy()
     preds = []
     for n in range(y_pred.shape[0]):
         pred = []

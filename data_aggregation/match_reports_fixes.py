@@ -5,11 +5,11 @@ from argparse import ArgumentParser
 import pandas as pd
 from tqdm import tqdm
 
-from add_path_info import load_report
+from .add_path_info import load_report
 
 
 def collect_info(path_to_reports):
-    f = open("fixed_methods.txt", "r")
+    f = open(os.path.join(".", "data", "fixed_methods.txt"), "r")
     fixed_methods = json.load(f)
 
     issues, method_names, path, hashes = [], [], [], []
@@ -95,7 +95,7 @@ def label_reports(issues_info, path_to_report):
                     hash = issues_info[issues_info['report_id'] == report_id]['hash'].values[0]
                     label_one_report(report, hash, fixed_methods, path_to_file)
             except Exception:
-                print(file)
+                print("Parsing error:", file)
 
 
 def main(reports_path):
