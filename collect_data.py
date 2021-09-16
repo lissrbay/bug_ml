@@ -11,7 +11,7 @@ from data_aggregation import match_reports_fixes
 from data_aggregation import add_path_info
 from data_aggregation import collect_sources
 from data_aggregation.EDA import count_optimal_frames_limit
-
+from data_aggregation.pycode2seq_embeddings import get_reports_embeddings
 
 args = json.load(open('collect_data_properties.json', 'r'))
 collect_commits = ["sudo", "sh", "./collect_fix_commits.sh", args['intellij_path']]
@@ -23,5 +23,8 @@ add_path_info.main(args['intellij_path'], args['reports_path'], args['files_limi
 collect_sources.main(args['intellij_path'], args['reports_path'], args['files_limit'])
 count_optimal_frames_limit.main(args['reports_path'])
 
-prepare_code2seq_cmd = ["sh", "code2seq.sh"]
-subprocess.Popen(prepare_code2seq_cmd).communicate()
+#prepare_code2seq_cmd = ["sh", "code2seq.sh"]
+#subprocess.Popen(prepare_code2seq_cmd).communicate()
+
+get_reports_embeddings(args['reports_path'], os.path.join("..", args['save_dir']))
+add_code_data(args['reports_path'], os.path.join("..", args['save_dir']))

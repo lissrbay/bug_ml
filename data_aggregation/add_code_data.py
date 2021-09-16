@@ -62,6 +62,12 @@ def collect_code(path):
 
 PATH_TO_REPORTS = os.path.join("..", "intellij_fixed_201007")
 
+def add_code_data(reports_path, save_dir):
+    path = os.path.join(reports_path, "labeled_reports")
+    reports_code, targets = collect_code(path)
+    pickle.dump(reports_code, open(os.path.join(save_dir, "reports_code"), "wb"))
+    pickle.dump(targets, open(os.path.join(save_dir, "targets"), "wb"))
+
 if __name__ == "__main__":
     path = os.path.join(PATH_TO_REPORTS, "labeled_reports")
     path_save = os.path.join("..", "data")
