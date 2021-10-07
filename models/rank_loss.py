@@ -10,6 +10,7 @@ import math
 from tqdm import tqdm
 from . import model as base_model_functions
 
+
 def rank_prediction(y_pred):
     pred = []
     for i in range(y_pred.shape[1]):

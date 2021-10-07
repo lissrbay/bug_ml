@@ -1,4 +1,5 @@
-from models.model import *
+from models.model import BugLocalizationModel, Parameters, LitBugLocModel
+from models.LSTMTagger import LSTMTagger
 import os
 import datetime
 import torch.optim as optim
@@ -7,6 +8,9 @@ from models.catboost_model import CatBoostModel
 import pickle
 from data_aggregation.union_predictions_and_features import union_preds_features
 import json
+from models.dataset_wrapper import read_data, create_dataloader
+import numpy as np
+import pytorch_lightning as pl
 
 
 class BugLocalizationModelTrain:
@@ -21,19 +25,32 @@ class BugLocalizationModelTrain:
         self.path_to_reports = reports_path
         self.frames_limit = frames_limit
         self.postfix_hash = str(datetime.datetime.today().strftime("%Y%m%d_%H%M"))
+
     def train_grid_search_model(self, save_path, params=None):
-        blm = BugLocalizationModel(self.path_to_embeddings, self.path_to_labels)
+        dataset = read_data(self.path_to_embeddings, self.path_to_labels)
+        train_dataloader, test_dataloader = create_dataloader(dataset, test_size=0.1)
+        embeddings_size = dataset[0][0].shape[1]
+        #blm = BugLocalizationModel(embeddings_size=embeddings_size)
         model = LSTMTagger
-        if params is None:
-            params = blm.create_list_of_train_hyperparameters()
-        blm.train(params, model, top_two=True)
+        #if params is None:
+        #    params = blm.create_list_of_train_hyperparameters()
+        #blm.train(train_dataloader, test_dataloader, params, model, top_two=True)
+        autoencoder = LitBugLocModel(model)
+
+        # most basic trainer, uses good defaults (auto-tensorboard, checkpoints, logs, and more)
+        # trainer = pl.Trainer(gpus=8) (if you have GPUs)
+        trainer = pl.Trainer()
+        trainer.fit(autoencoder, train_loader)
         self.params = params
-        blm.save_results(name=save_path)
-        self.model = blm
+        #blm.save_results(name=save_path)
+        #self.model = blm
 
 
     def fit_model_from_params(self, params=None, use_best_params=False, path_to_results='.', save_dir=None, model_name=None):
-        blm = BugLocalizationModel(self.path_to_embeddings, self.path_to_labels)
+        dataset = read_data(self.path_to_embeddings, self.path_to_labels)
+        train_dataloader, test_dataloader = create_dataloader(dataset, test_size=0.1)
+        embeddings_size = dataset[0][0].shape[1]
+        #blm = BugLocalizationModel(embeddings_size=embeddings_size)
         model = LSTMTagger
         if save_dir is None:
             save_dir = '.'
@@ -45,10 +62,14 @@ class BugLocalizationModelTrain:
             best_params = self.model.best_params()
         else:
             best_params = params
-        blm.train(best_params, model)
+        autoencoder = LitBugLocModel(model)
+        trainer = pl.Trainer()
+        trainer.fit(autoencoder, train_dataloader)
+        self.params = params
+        #blm.train(train_dataloader, test_dataloader, best_params, model)
 
-        blm.save_model(save_path)
-        self.model = blm
+        #blm.save_model(save_path)
+        #self.model = blm
         return blm
 
     def get_code_features(self):
