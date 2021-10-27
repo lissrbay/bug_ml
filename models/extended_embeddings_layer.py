@@ -9,10 +9,10 @@ class ExtendedEmbedding(nn.Embedding):
         self.vocab_size = vocab_size
         self.word_emb_dim = word_emb_dim
         
-        
     def embeddings(self, inputs):
         emb = self(torch.LongTensor([[0]]))
         inputs[np.where(~inputs.detach().numpy().all(axis=2))] = emb
         emb = self(torch.LongTensor([[1]]))
-        inputs[np.where(np.sum(inputs.detach().numpy(), axis=2)==self.word_emb_dim)] = emb
+        inputs[np.where(np.sum(inputs.detach().numpy(), axis=2) == self.word_emb_dim)] = emb
+
         return inputs

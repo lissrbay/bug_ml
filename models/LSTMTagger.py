@@ -1,5 +1,4 @@
 import torch.nn as nn
-import torch
 import torch.nn.functional as F
 from .extended_embeddings_layer import ExtendedEmbedding
 

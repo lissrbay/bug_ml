@@ -5,12 +5,14 @@ from sklearn.model_selection import train_test_split
 from torch.utils.data import DataLoader, RandomSampler, SequentialSampler
 from torch.utils.data import TensorDataset, random_split
 
-def read_data(embeddings_path='X.npy', labels_path='y.npy', reports_path=None):
+def read_data(embeddings_path='X.npy', labels_path=None, reports_path=None):
     X = np.load(embeddings_path, allow_pickle=True)
-    y = np.load(labels_path, allow_pickle=True)
     X = torch.FloatTensor(X)
+    if labels_path is None:
+        return TensorDataset(X)
+    y = np.load(labels_path, allow_pickle=True)
     y = torch.LongTensor(y)
-
+    y[y == 2] = 0
     if reports_path is None:
         return TensorDataset(X, y)
     reports_used = np.load(reports_path)
