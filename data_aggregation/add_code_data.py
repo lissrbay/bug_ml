@@ -2,8 +2,8 @@ import os
 from tqdm import tqdm
 import json
 import re
-from .parser_java_kotlin import Parser
-from .add_path_info import load_report
+from parser_java_kotlin import Parser
+from add_path_info import load_report
 import pickle
 import argparse
 
