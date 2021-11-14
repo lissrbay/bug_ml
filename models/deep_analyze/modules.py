@@ -1,5 +1,4 @@
 from typing import List
-from unicodedata import bidirectional
 import pytorch_lightning as pl
 import torch
 import torch.nn as nn
@@ -25,7 +24,7 @@ class DeepAnalyzeAttention(pl.LightningModule):
     def forward(self, feats: torch.Tensor, mask: torch.Tensor):
         # inputs: [seq_len; batch_size; input_dim]
 
-        feats[~mask] = 0
+        feats = feats * mask.unsqueeze(-1)
 
         # [seq_len; seq_len; batch_size; input_dim]
         scores = torch.einsum("xbh,ybh->xybh", feats, feats)
@@ -39,10 +38,10 @@ class DeepAnalyzeAttention(pl.LightningModule):
         combined = torch.cat((g, feats), dim=-1)
         z = self.g_linear(combined)
 
-        z[~mask] = 0
+        z = z * mask.unsqueeze(-1)
 
         # [seq_len; batch_size; output_dim]
-        return torch.tanh(self.result_linear(z))
+        return self.result_linear(z)
 
 class DeepAnalyzeCRF(pl.LightningModule):
     def __init__(self, n_tags):
@@ -52,7 +51,7 @@ class DeepAnalyzeCRF(pl.LightningModule):
         self.padding = 0
         self.start_tag_id = 1
         self.stop_tag_id = 2
-        self.ninf = -1000
+        self.ninf = -100000
 
         self.transitions = nn.Parameter(torch.randn(self.n_tags, self.n_tags))
 
@@ -102,10 +101,10 @@ class DeepAnalyzeCRF(pl.LightningModule):
 
 
             forward_var = torch.cat(alphas_t, dim=-1).view(batch_size, -1)
-            # terminal_var[i == lengths] = forward_var[i == lengths].clone()
+            terminal_var[i == lengths] = forward_var[i == lengths]
         
-        # terminal_var[lengths == seq_len] = forward_var[lengths == seq_len].clone()
-        terminal_var = forward_var + self.transitions[self.stop_tag_id]
+        terminal_var[lengths == seq_len] = forward_var[lengths == seq_len]
+        terminal_var = terminal_var + self.transitions[self.stop_tag_id]
         alpha = log_sum_exp(terminal_var)
         return alpha
 
@@ -113,11 +112,14 @@ class DeepAnalyzeCRF(pl.LightningModule):
         # Gives the score of a provided tag sequence
         seq_len, batch_size = tags.shape
 
-        tags += self.n_special_tags
+        lengths = mask.sum(dim=0)
+
+        tags = tags + self.n_special_tags
 
         special_tags = torch.zeros((seq_len, batch_size, self.n_special_tags)).to(feats.device)
         special_tags[0, :, self.start_tag_id] = 1
-        special_tags[-1, :, self.stop_tag_id] = 1
+        special_tags[lengths-1, :, self.stop_tag_id] = 1
+        special_tags[mask][self.padding] = 1
 
         feats = torch.cat((special_tags, feats), dim=-1)
 
@@ -125,16 +127,15 @@ class DeepAnalyzeCRF(pl.LightningModule):
         tags = torch.cat([torch.full((1, batch_size), self.start_tag_id, dtype=torch.long).to(feats.device), tags])
         for i, feat in enumerate(feats):
             step_scores = self.transitions[tags[i + 1], tags[i]] + feat[torch.arange(batch_size), tags[i + 1]]
-            # step_scores[mask[i]] = 0
+            step_scores = step_scores * mask[i]
             score = score + \
                 step_scores
         step_scores = self.transitions[self.stop_tag_id, tags[-1]]
-        # step_scores[mask[-1]] = 0
+        step_scores = step_scores * mask[i]
         score = score + step_scores
         return score
 
     def _viterbi_decode(self, feats, mask):
-        raise Exception
         backpointers = []
         # feats: [seq_len; batch_size; n_tags]
         seq_len, batch_size, _ = feats.shape
@@ -144,7 +145,8 @@ class DeepAnalyzeCRF(pl.LightningModule):
         # Add special tags
         special_tags = torch.zeros((seq_len, batch_size, self.n_special_tags)).to(feats.device)
         special_tags[0, :, self.start_tag_id] = 1
-        special_tags[-1, :, self.stop_tag_id] = 1
+        special_tags[lengths - 1, :, self.stop_tag_id] = 1
+        special_tags[mask][self.padding] = 1
 
         feats = torch.cat((special_tags, feats), dim=-1)
 
@@ -207,7 +209,8 @@ class DeepAnalyzeCRF(pl.LightningModule):
     def neg_log_likelihood(self, feats, tags, mask):
         forward_score = self._forward_alg(feats, mask)
         gold_score = self._score_sentence(feats, tags, mask)
-        return forward_score - gold_score
+
+        return forward_score, gold_score
 
     def forward(self, feats, mask):  # dont confuse this with _forward_alg above.
         # Get the emission scores from the BiLSTM
@@ -245,13 +248,3 @@ class TfidfEmbeddings:
     @property
     def n_embed(self):
         return len(self.method_vectorizer.vocabulary_) + len(self.namespace_vectorizer.vocabulary_)
-
-
-
-# if __name__ == "__main__":
-#     crf = DeepAnalyzeCRF(2)
-#     lengths = torch.tensor([1, 2, 2, 3])
-#     a = torch.randn((3, 4, 2))
-#     b = torch.randint(0, 1, (3, 4))
-#     mask = torch.arange(3).unsqueeze(-1).expand(3, len(lengths)) < lengths.long().unsqueeze(0)
-#     print(crf.neg_log_likelihood(a, b, mask))
