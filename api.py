@@ -9,7 +9,8 @@ from pycode2seq import Code2Seq
 import data_aggregation.get_features
 from data_aggregation.union_predictions_and_features import union_preds_features
 from models.catboost_model import CatBoostModel
-from models.model import BugLocalizationModel
+from models.model import Parameters, PlBugLocModel
+from models.LSTMTagger import LSTMTagger
 
 
 class BugLocalizationModelAPI:
@@ -17,26 +18,29 @@ class BugLocalizationModelAPI:
         self.emb_model = emb_model
         self.model = None
         if lstm_model_path:
-            self.model = BugLocalizationModel()
-            self.model.load_model(lstm_model_path)
+            pl_model = PlBugLocModel(LSTMTagger)
+            pl_model.load_model(lstm_model_path)
+            self.model = pl_model
 
         if cb_model_path:
             self.cb_model = CatBoostModel.load_catboost_model(cb_model_path)
-
         self.code2seq_predictor = None
-        self.frames_limit = 384
+        self.frames_limit = 80
 
     def get_code_features(self, methods_data):
         self.feature_extractor = data_aggregation.get_features.FeatureExtractor()
         for method in methods_data:
             self.feature_extractor.get_feature_from_code(method['code'])
             self.feature_extractor.get_feature_from_metadata(method['meta'])
-        return self.feature_extractor.to_pandas()
+        df_features = self.feature_extractor.to_pandas()
+        return df_features
 
     def collect_data_for_catboost(self, methods_data, lstm_prediction):
         code_features_df = self.get_code_features(methods_data)
         df_preds = self.model_prediction_to_df(lstm_prediction, methods_data)
         df_all = union_preds_features(df_preds, code_features_df)
+        df_all = self.cb_model.exception_transformer.transform(df_all)
+
         df_all = df_all.drop(['label', 'method_name', 'report_id', 'indices'], axis=1)
         return df_all
 
@@ -46,7 +50,7 @@ class BugLocalizationModelAPI:
         return (-prediction).argsort()[:top_k].tolist(), prediction.tolist()
 
     def predict_bug_cb(self, catboost_data, top_k=3):
-        prediction = self.cb_model.predict_proba(catboost_data)[:, :, 1]
+        prediction = self.cb_model.model.predict(catboost_data)[:, :, 1]
         prediction = prediction.flatten()
         return (-prediction).argsort()[:top_k], prediction
 
@@ -90,8 +94,8 @@ def main():
     emb_model = Code2Seq.load("java")
     stacktrace = json.load(open("ex_api_stacktrace.json", "r"))
     api = BugLocalizationModelAPI(emb_model,
-                                  lstm_model_path='./data/lstm_20210909_1513',
-                                  cb_model_path='./data/cb_model_20210909_1513')
+                                  lstm_model_path='./data/lstm_20211024_2053',
+                                  cb_model_path='./data/cb_model_20211024_2053')
     top_k_pred, scores = api.predict(stacktrace, pred_type='all')
 
     print(top_k_pred)
