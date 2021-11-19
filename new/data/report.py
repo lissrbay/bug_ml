@@ -7,6 +7,8 @@ import attr
 class Frame:
     name: str
     line: int
+    code: str
+    meta: str
 
 
 @attr.s(frozen=True, auto_attribs=True)
