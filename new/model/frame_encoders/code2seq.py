@@ -14,8 +14,8 @@ class Code2SeqFrameEncoder(FrameEncoder):
     _tmp_file_name = "tmp.java"
     _emb_dim = 320
 
-    def __init__(self, emb_model: EmbModel):
-        self.emb_model = emb_model
+    def __init__(self, name: str):
+        self.emb_model = EmbModel.load(name)
 
     @lru_cache(maxsize=10000)
     def encode(self, frame: Frame) -> torch.Tensor:

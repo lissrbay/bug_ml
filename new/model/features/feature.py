@@ -12,6 +12,9 @@ class BaseFeature(ABC):
     def __init__(self, **kwargs):
         pass
 
+    def fit(self, reports: List[Report], target: List[List[int]]) -> 'BaseFeature':
+        pass
+
     @abstractmethod
     def compute(self, report: Report) -> List[List[float]]:
         raise NotImplementedError
