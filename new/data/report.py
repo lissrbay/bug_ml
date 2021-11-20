@@ -14,5 +14,5 @@ class Frame:
 @attr.s(frozen=True, auto_attribs=True)
 class Report:
     id: int
-    exception: str
+    exceptions: str
     frames: List[Frame]
