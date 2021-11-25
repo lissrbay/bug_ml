@@ -52,14 +52,14 @@ class BugLocalizationModelAPI:
         return (-prediction).argsort()[:top_k].tolist(), prediction.tolist()
 
     def predict_bug_cb(self, catboost_data, top_k=3):
-        prediction = self.cb_model.model.predict(catboost_data)[:, :, 1]
+        prediction = self.cb_model.model.predict(catboost_data)  # [:, :, 1]
         prediction = prediction.flatten()
         return (-prediction).argsort()[:top_k], prediction
 
     @staticmethod
     def model_prediction_to_df(report_id, prediction):
-        return pd.DataFrame({'report_id': [report_id for _ in range(prediction.shape[0])],
-                             'method_stack_position': np.arange(0, prediction.shape[0]),
+        return pd.DataFrame({'report_id': [report_id for _ in range(len(prediction))],
+                             'method_stack_position': np.arange(0, len(prediction)),
                              'lstm_prediction': prediction})
 
     def predict(self, methods_data, pred_type='lstm', top_k=3):
