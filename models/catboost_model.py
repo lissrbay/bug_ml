@@ -1,5 +1,8 @@
 from collections import Counter
 import pickle
+
+import numpy as np
+import pandas as pd
 from sklearn.model_selection import train_test_split
 
 from catboost import CatBoost
@@ -12,10 +15,14 @@ catboost_params = {'loss_function': 'QuerySoftMax',
 
 
 class ExceptionTransformer:
-    def __init__(self):
+    """
+    One-hot features for most popular exception classes
+    """
+    def __init__(self, top_n: int = 100):
+        self.top_n = top_n
         self.exceptions = None
 
-    def fit(self, df_features):
+    def fit(self, df_features: pd.DataFrame) -> 'ExceptionTransformer':
         exceptions_ = df_features['exception_class'].values
         exceptions = []
         for e in exceptions_:
@@ -27,15 +34,17 @@ class ExceptionTransformer:
         for exceptions_list in exceptions:
             for e in exceptions_list:
                 all_exceptions.append(e)
-        self.exceptions, _ = zip(*Counter(all_exceptions).most_common(100))
+        self.exceptions, _ = zip(*Counter(all_exceptions).most_common(self.top_n))
+        return self
 
-    def transform(self, df_features):
+    def transform(self, df_features: pd.DataFrame) -> pd.DataFrame:
         df = df_features.copy()
         for e in self.exceptions:
             try:
                 df[e] = df['exception_class'].apply(lambda x: 1 if e in x else 0)
             except Exception:
                 print("No exception_class column.")
+        df = df.drop(['exception_class'], axis=1)
         return df
 
     def fit_transform(self, df_features):
@@ -79,6 +88,11 @@ class CatBoostModel:
         if save:
             pickle.dump(self, open(path, "wb"))
         return self.model
+
+    def predict(self, features: pd.DataFrame) -> np.ndarray:
+        features = self.exception_transformer.transform(features)
+        preds = self.model.predict(features)
+        return preds
 
     @classmethod
     def load_catboost_model(cls, path) -> 'CatBoostModel':
