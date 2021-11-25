@@ -32,6 +32,7 @@ class BugLocalizationModelAPI:
     def get_code_features(methods_data: List[Dict[str, Any]]) -> pd.DataFrame:
         feature_extractor = FeatureExtractor()
         for method in methods_data:
+
             feature_extractor.add_feature_from_code(method['code'])
             feature_extractor.add_feature_from_metadata(method['meta'])
         return feature_extractor.to_pandas()
@@ -39,7 +40,8 @@ class BugLocalizationModelAPI:
     def predict_bug_lstm(self, embeddings: np.ndarray, top_k: int = 3) -> Tuple[List[int], List[float]]:
         prediction = self.model.model(torch.FloatTensor(embeddings))[:, :, 1]
         prediction = prediction.flatten()
-        return (-prediction).argsort()[:top_k].tolist(), prediction.tolist()
+        return (-prediction).argsort()[:top_k].tolist(), prediction
+
 
     def predict_bug_cb(self, methods_data: List[Dict[str, Any]], lstm_prediction: List[float],
                        top_k: int = 3) -> Tuple[List[int], List[float]]:
