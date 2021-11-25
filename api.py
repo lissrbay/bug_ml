@@ -44,19 +44,18 @@ class BugLocalizationModelAPI:
     def predict_bug_cb(self, methods_data: List[Dict[str, Any]], lstm_prediction: List[float],
                        top_k: int = 3) -> Tuple[List[int], List[float]]:
         code_features_df = self.get_code_features(methods_data)
-        df_preds = self.model_prediction_to_df(methods_data, lstm_prediction)
+        report_id = methods_data[0]['meta']['id'] if 'id' in methods_data[0]['meta'] else 0
+        df_preds = self.model_prediction_to_df(report_id, lstm_prediction)
         df_all = union_preds_features(df_preds, code_features_df)
         df_all = df_all.drop(['label', 'method_name', 'report_id', 'indices'], axis=1)
         prediction = self.cb_model.predict(df_all)
         return (-prediction).argsort()[:top_k].tolist(), prediction.tolist()  # type: ignore
 
     @staticmethod
-    def model_prediction_to_df(methods_data: List[Dict[str, Any]], prediction: List[float]) -> pd.DataFrame:
-        return pd.DataFrame({
-            'report_id': [frame['meta']['id'] for frame in methods_data],
-            'method_stack_position': np.arange(0, len(prediction)),
-            'lstm_prediction': prediction
-        })
+    def model_prediction_to_df(report_id, prediction):
+        return pd.DataFrame({'report_id': [report_id for _ in range(len(prediction))],
+                             'method_stack_position': np.arange(0, len(prediction)),
+                             'lstm_prediction': prediction})
 
     def predict(self, methods_data: List[Dict[str, Any]], pred_type: str = 'lstm', top_k: int = 3):
         embeddings = self.get_embeddings(methods_data)
