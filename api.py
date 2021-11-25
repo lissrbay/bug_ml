@@ -37,11 +37,13 @@ class BugLocalizationModelAPI:
 
     def collect_data_for_catboost(self, methods_data, lstm_prediction):
         code_features_df = self.get_code_features(methods_data)
-        df_preds = self.model_prediction_to_df(lstm_prediction, methods_data)
+        report_id = methods_data[0]['meta']['id'] if 'id' in methods_data[0]['meta'] else 0
+        df_preds = self.model_prediction_to_df(report_id, lstm_prediction)
         df_all = union_preds_features(df_preds, code_features_df)
-        df_all = self.cb_model.exception_transformer.transform(df_all)
 
         df_all = df_all.drop(['label', 'method_name', 'report_id', 'indices'], axis=1)
+        df_all = self.cb_model.exception_transformer.transform(df_all)
+        df_all = df_all.drop(['exception_class'], axis=1)
         return df_all
 
     def predict_bug_lstm(self, embeddings, top_k=3):
@@ -55,10 +57,10 @@ class BugLocalizationModelAPI:
         return (-prediction).argsort()[:top_k], prediction
 
     @staticmethod
-    def model_prediction_to_df(prediction, methods_data):
-        return pd.DataFrame(
-            {'report_id': [frame['meta']['id'] for frame in methods_data], 'method_stack_position': np.arange(0, len(prediction)),
-             'lstm_prediction': prediction})
+    def model_prediction_to_df(report_id, prediction):
+        return pd.DataFrame({'report_id': [report_id for _ in range(prediction.shape[0])],
+                             'method_stack_position': np.arange(0, prediction.shape[0]),
+                             'lstm_prediction': prediction})
 
     def predict(self, methods_data, pred_type='lstm', top_k=3):
         embeddings = self.get_embeddings(methods_data)
