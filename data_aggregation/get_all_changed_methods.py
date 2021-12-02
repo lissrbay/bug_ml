@@ -7,7 +7,7 @@ from collections import defaultdict
 
 from tqdm import tqdm
 
-from .get_java_methods import ChangedMethodsFinder
+from get_java_methods import ChangedMethodsFinder
 cmf = ChangedMethodsFinder()
 
 def get_changed_methods_from_commits(next_commit, path):
@@ -22,15 +22,17 @@ def get_commits_and_issues():
     commits_info = "".join(f.readlines())
     pattern_commit = re.compile("(?<=\ncommit )\w{40,40}")
     pattern_issue = re.compile("(?<=EA-)\d+")
-    issues = defaultdict(list)
+    issues = []
     commits = [(commit.group(0), commit.start()) for commit in re.finditer(pattern_commit, commits_info)]
     commits.append(("", len(commits_info)))
-
+    hashes = []
     for i in range(len(commits) - 1):
         commit_text = commits_info[commits[i][1]: commits[i + 1][1]]
-        issue_id = re.search(pattern_issue, commit_text)
-        issues[str(commits[i][0])] = issue_id.group(0)
-    return list(issues.keys()), issues
+        issue_ids = re.findall(pattern_issue, commit_text)
+        for issue_id in issue_ids:
+            issues.append(issue_id)
+            hashes.append(str(commits[i][0]))
+    return hashes, issues
 
 
 def collect_all_changed_methods(fix_commits_hashes, path):
@@ -53,14 +55,12 @@ def parse_method_signature(cms):
 def save_results(fix_commit_hashes, fix_issues, changed_methods):
     info = dict()
     for i in range(len(changed_methods)):
+        issue = fix_issues[i]
         if changed_methods[i]:
             cms = list(changed_methods[i])
             methods = parse_method_signature(cms)
-            issue = fix_issues[fix_commit_hashes[i]]
-
             info[issue] = {"hash": fix_commit_hashes[i], "fixed_methods": methods}
         else:
-            issue = fix_issues[fix_commit_hashes[i]]
             info[issue] = {"hash": fix_commit_hashes[i], "fixed_methods": []}
 
     f = open(os.path.join(".", "data", "fixed_methods.txt"), 'w')
@@ -75,4 +75,4 @@ def main(intellij_path):
 
 
 if __name__ == "__main__":
-    main()
+    main('/Users/e.poslovskaya/bug_ml_copy_2/bug_ml_copy_2/intellij-community')
