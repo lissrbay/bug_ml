@@ -97,7 +97,6 @@ class LstmTagger(BlamedTagger, nn.Module):
         return self
 
     def predict(self, report: Report) -> List[float]:
-
         with torch.no_grad():
             features = self.report_encoder.encode_report(report)
 
