@@ -14,34 +14,37 @@ def log_sum_exp(vec: torch.Tensor):
         torch.log(torch.sum(torch.exp(vec - max_score.unsqueeze(-1))))
 
 class DeepAnalyzeAttention(pl.LightningModule):
-    def __init__(self, input_dim, output_dim):
+    def __init__(self, input_dim, output_dim, max_len):
         super().__init__()
-        self.score_linear = nn.Linear(input_dim, input_dim, bias=False)
-        self.g_linear = nn.Linear(input_dim * 2, input_dim, bias=False)
+        self.prob_layer = nn.Linear(input_dim, output_dim)
+        self.weight = nn.parameter.Parameter(torch.randn(output_dim, max_len))
+        self.g_linear = nn.Linear(input_dim, input_dim, bias=False)
         self.result_linear = nn.Linear(input_dim, output_dim, bias=False)
         self.softmax = nn.Softmax(dim=0)
 
     def forward(self, feats: torch.Tensor, mask: torch.Tensor):
-        # inputs: [seq_len; batch_size; input_dim]
+        # feats: [max_len; batch_size; input_dim]
 
-        feats = feats * mask.unsqueeze(-1)
+        # [max_len; batch_size; output_dim]
+        probs = self.prob_layer(feats)
 
-        # [seq_len; seq_len; batch_size; input_dim]
-        scores = torch.einsum("xbh,ybh->xybh", feats, feats)
-        scores = self.score_linear(scores)
+        probs = probs * mask.unsqueeze(-1)
+
+        # [output_dim; batch_size; output_dim]
+        scores = torch.einsum("xh,hby->xby", self.weight, probs)
         a = self.softmax(scores)
 
-        # [seq_len; batch_size; input_dim]
-        g = torch.einsum("xybh,ybh->xbh", a, feats)
+        # [max_len; batch_size; outout_dim]
+        h = torch.einsum("xby,nby->nbx", a, probs)
 
         # [seq_len; batch_size; input_dim]
-        combined = torch.cat((g, feats), dim=-1)
-        z = self.g_linear(combined)
+        # combined = torch.cat((g, feats), dim=-1)
+        # z = self.g_linear(combined)
 
-        z = z * mask.unsqueeze(-1)
+        h = h * mask.unsqueeze(-1)
 
         # [seq_len; batch_size; output_dim]
-        return self.result_linear(z)
+        return h
 
 class DeepAnalyzeCRF(pl.LightningModule):
     def __init__(self, n_tags):
@@ -248,3 +251,10 @@ class TfidfEmbeddings:
     @property
     def n_embed(self):
         return len(self.method_vectorizer.vocabulary_) + len(self.namespace_vectorizer.vocabulary_)
+
+
+if __name__ == "__main__":
+    attn = DeepAnalyzeAttention(10, 2, 5)
+    x = torch.randn((5, 2, 10))
+    mask = x.sum(-1) > 1
+    print(attn(x, mask))
