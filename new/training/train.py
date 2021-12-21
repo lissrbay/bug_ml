@@ -6,10 +6,13 @@ from typing import List, Tuple
 
 from new.data.report import Report, Frame
 # from new.model.frame_encoders.code2seq import Code2SeqFrameEncoder
+from new.model.catboost_tagger import CatBoostTagger
 from new.model.frame_encoders.tfidf import TfIdfFrameEncoder
 from new.model.lstm_tagger import LstmTagger
+from new.model.report_encoders.dummy_report_encoder import DummyReportEncoder
 from new.model.report_encoders.simple_report_encoder import SimpleReportEncoder
 from new.model.report_encoders.tfidf import TfIdfReportEncoder
+from new.training.torch_training import train_lstm_tagger
 
 
 def read_reports(reports_path: str) -> Tuple[List[Report], List[List[int]]]:
@@ -35,20 +38,12 @@ def read_reports(reports_path: str) -> Tuple[List[Report], List[List[int]]]:
                 reports.append(report)
                 targets.append(target)
         except JSONDecodeError:
-            print(report_file)
+            print(f"Rading report {report_file} failed")
             continue
     return reports, targets
 
 
 def train(reports_path: str, save_path: str):
-    # tagger = CatBoostTagger(
-    #     [LstmTagger(
-    #         # Code2SeqFrameEncoder("java"),
-    #         DummyReportEncoder(),
-    #         hidden_dim=40, layers_num=1, with_crf=False, with_attention=False, max_len=80
-    #     )],
-    #     FeaturesComputer(["code", "one_hot_exception"])
-    # )
     reports, target = read_reports(reports_path)
 
     encoder = TfIdfReportEncoder(max_len=80).fit(reports, target)
@@ -57,9 +52,19 @@ def train(reports_path: str, save_path: str):
         encoder,
         hidden_dim=40, layers_num=1, with_crf=True, with_attention=True, max_len=80
     )
+    tmp = tagger.predict(reports[0])
+    # cached_dataset_path = Path("/home/dumtrii/Downloads/bug_ml_computed")
+    # tagger = train_lstm_tagger(tagger, reports, target)
 
     tagger.fit(reports, target)
-    tagger.save(save_path)
+
+    cbst_tagger = CatBoostTagger(
+        [tagger],
+        DummyReportEncoder()
+    )
+
+    cbst_tagger.fit(reports, target)
+
     return tagger
 
 

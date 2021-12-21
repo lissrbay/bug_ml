@@ -48,5 +48,6 @@ class TfIdfFrameEncoder(FrameEncoder):
 
         return torch.cat((torch.Tensor(method_embeddings), torch.Tensor(namespace_emdeddings)), dim=-1)
 
+    @property
     def dim(self) -> int:
         return len(self.method_vectorizer.vocabulary_) + len(self.namespace_vectorizer.vocabulary_)

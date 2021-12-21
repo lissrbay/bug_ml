@@ -33,5 +33,6 @@ class ConcatFrameEncoder(FrameEncoder):
     def encode(self, frame: Frame) -> torch.Tensor:
         pass
 
+    @property
     def dim(self) -> int:
         return self._dim

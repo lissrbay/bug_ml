@@ -5,6 +5,7 @@ from catboost import CatBoost
 from new.data.report import Report
 from new.model.blamed_tagger import BlamedTagger
 from new.model.features.features_computer import FeaturesComputer
+from new.model.report_encoders.report_encoder import ReportEncoder
 
 
 class CatBoostTagger(BlamedTagger):
@@ -21,21 +22,21 @@ class CatBoostTagger(BlamedTagger):
         'metric_period': 100
     }
 
-    def __init__(self, models: List[BlamedTagger], feature_computer: FeaturesComputer):
+    def __init__(self, models: List[BlamedTagger], report_encoder: ReportEncoder):
         self.taggers = models
-        self.feature_computer = feature_computer
+        self.report_encoder = report_encoder
         self.model = CatBoost(CatBoostTagger.default_params)
 
     def create_features(self, report: Report) -> List[List[float]]:
-        features = self.feature_computer.compute(report)
+        features = self.report_encoder.encode_report(report).tolist()
         for tagger in self.taggers:
             frame_preds = tagger.predict(report)
-            for i, value in enumerate(frame_preds):
+            for i, value in enumerate(frame_preds[:len(features)]):
                 features[i].append(value)
         return features
 
     def fit(self, reports: List[Report], target: List[List[int]]) -> 'CatBoostTagger':
-        self.feature_computer.fit(reports, target)
+        self.report_encoder.fit(reports, target)
         for tagger in self.taggers:
             tagger.fit(reports, target)
         features = [self.create_features(report) for report in reports]

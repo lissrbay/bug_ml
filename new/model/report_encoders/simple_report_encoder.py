@@ -21,4 +21,4 @@ class SimpleReportEncoder(ReportEncoder):
 
     @property
     def dim(self) -> int:
-        return self.frame_encoder.dim()
+        return self.frame_encoder.dim
