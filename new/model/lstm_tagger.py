@@ -72,7 +72,7 @@ class LstmTagger(BlamedTagger, nn.Module):
         res, _ = self.lstm(embeddings)
 
         if self.with_attention:
-            res = self.lstm_dropout(res)
+            # res = self.lstm_dropout(res)
             res = self.attention(res, mask)
         else:
             res = self.tagger(res)

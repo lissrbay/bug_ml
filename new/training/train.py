@@ -38,7 +38,7 @@ def read_reports(reports_path: str) -> Tuple[List[Report], List[List[int]]]:
                 reports.append(report)
                 targets.append(target)
         except JSONDecodeError:
-            print(f"Rading report {report_file} failed")
+            print(f"Reading report {report_file} failed")
             continue
     return reports, targets
 
@@ -46,24 +46,25 @@ def read_reports(reports_path: str) -> Tuple[List[Report], List[List[int]]]:
 def train(reports_path: str, save_path: str):
     reports, target = read_reports(reports_path)
 
-    encoder = TfIdfReportEncoder(max_len=80).fit(reports, target)
+    encoder = TfIdfReportEncoder(max_len=256).fit(reports, target)
 
     tagger = LstmTagger(
         encoder,
-        hidden_dim=40, layers_num=1, with_crf=True, with_attention=True, max_len=80
+        hidden_dim=100, layers_num=1, with_crf=True, with_attention=True, max_len=80
     )
-    tmp = tagger.predict(reports[0])
-    # cached_dataset_path = Path("/home/dumtrii/Downloads/bug_ml_computed")
-    # tagger = train_lstm_tagger(tagger, reports, target)
+    # tmp = tagger.predict(reports[0])
+    cached_dataset_path = Path("/home/dumtrii/Downloads/bug_ml_computed")
+    cached_dataset_path = None
+    tagger = train_lstm_tagger(tagger, reports, target, cached_dataset_path)
 
-    tagger.fit(reports, target)
+    # tagger.fit(reports, target)
+    #
+    # cbst_tagger = CatBoostTagger(
+    #     [tagger],
+    #     DummyReportEncoder()
+    # )
 
-    cbst_tagger = CatBoostTagger(
-        [tagger],
-        DummyReportEncoder()
-    )
-
-    cbst_tagger.fit(reports, target)
+    # cbst_tagger.fit(reports, target)
 
     return tagger
 

@@ -8,7 +8,7 @@ from sklearn.model_selection import train_test_split
 from torch import Tensor
 from torch.nn.functional import pad
 from torch.utils.data import DataLoader
-from torch.utils.data.dataset import Dataset
+from torch.utils.data.dataset import Dataset, T_co
 
 from new.data.report import Report
 from new.model.report_encoders.report_encoder import ReportEncoder
@@ -64,6 +64,8 @@ class ReportsDataset(Dataset):
         return encoded_report, target_tensor
 
     def __len__(self):
+        if self.load_path:
+            return len(self.x)
         return len(self.reports)
 
     def __getitem__(self, index):
@@ -73,10 +75,13 @@ class ReportsDataset(Dataset):
         else:
             feature, target = self._encode_report(index)
 
+        feature = feature[:self.max_len]
+        target = target[:self.max_len]
+
         length = feature.shape[0]
 
-        feature = pad(feature[:self.max_len], (0, 0, 0, self.max_len - length)).unsqueeze(1)
-        label = pad(target[:self.max_len], (0, self.max_len - length)).unsqueeze(1)
+        feature = pad(feature, (0, 0, 0, self.max_len - length)).unsqueeze(1)
+        label = pad(target, (0, self.max_len - length)).unsqueeze(1)
 
         mask = (torch.arange(self.max_len) < length).unsqueeze(1)
         mask = mask * (label != 2)
@@ -85,3 +90,18 @@ class ReportsDataset(Dataset):
         feature = feature * mask.unsqueeze(-1)
 
         return feature.float(), label.long(), mask
+
+
+class SimpleDataset(Dataset):
+    def __getitem__(self, index) -> T_co:
+        return self.reports[index], self.targets[index]
+
+    def __len__(self):
+        return len(self.reports)
+
+    def __init__(self, reports: List[Report], targets: List[List[int]]):
+        self.reports = reports
+        self.targets = targets
+
+def simple_collate(data):
+    return zip(*data)

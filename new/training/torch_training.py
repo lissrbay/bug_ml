@@ -83,7 +83,7 @@ def train_lstm_tagger(tagger: LstmTagger, reports: List[Report], target: List[Li
     datamodule = ReportsDataModule(reports, target, 4, tagger.report_encoder, 80, cached_dataset_path)
     model = TrainingModule(tagger)
 
-    trainer = Trainer(gpus=1, max_epochs=1)
+    trainer = Trainer(gpus=1)
     trainer.fit(model, datamodule)
 
     return tagger
