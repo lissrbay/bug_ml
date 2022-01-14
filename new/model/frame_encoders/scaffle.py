@@ -21,12 +21,12 @@ class ScaffleFrameEncoder(FrameEncoder):
         embeddings = []
         for word in method_name_tokens:
             try:
-                vector = self.emb_model.wv[word].reshape((100,))
+                vector = self.emb_model.wv[word].reshape((self.dim(),))
             except KeyError:
-                vector = np.zeros((100,))
+                vector = np.zeros((self.dim(),))
             embeddings.append(vector)
         return torch.FloatTensor(embeddings)
 
 
     def dim(self) -> int:
-        return self.emb_model.wv.vectors.shape[1]
+        return self.emb_model.vector_size
