@@ -1,12 +1,14 @@
-from typing import List, Dict
+from typing import List, Dict, Optional
 import json
 import attr
 import pickle
+import torch
 
 @attr.s(frozen=False, auto_attribs=True)
 class Frame:
     code: str
     meta: Dict
+    cached_embedding: Optional[torch.Tensor]
 
 
 @attr.s(frozen=False, auto_attribs=True)
@@ -23,8 +25,8 @@ class Report:
                            'file_name': frame['file_name'],
                            'line': frame['line_number'],
                            'exception_class': self.exceptions}
-            new_frame = Frame('',
-                              method_meta)
+
+            new_frame = Frame('', method_meta, None)
             self.frames.append(new_frame)
 
 
@@ -34,7 +36,7 @@ class Report:
             f = open(name, 'r')
             base_report = json.load(f)
             f.close()
-        except Exception:
+        except json.JSONDecodeError:
             return Report(0, [], '', [])
 
         exceptions = base_report['class']
@@ -53,3 +55,6 @@ class Report:
         f = open(name, 'wb')
         pickle.dump(self, f)
         f.close()
+
+    def frames_count(self):
+        return len(self.frames)
