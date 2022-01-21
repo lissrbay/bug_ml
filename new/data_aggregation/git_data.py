@@ -60,7 +60,7 @@ class GitFeaturesExtractor:
                 report.save_report(report_path)
 
 
-def main(intellij_path: str, reports_path: str, frame_limit: int):
+def add_git_data(intellij_path: str, reports_path: str, frame_limit: int):
     gfe = GitFeaturesExtractor(intellij_path, reports_path, frame_limit)
     gfe.iterate_reports()
 
