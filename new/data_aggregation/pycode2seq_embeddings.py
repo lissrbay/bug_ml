@@ -4,6 +4,7 @@ from tqdm import tqdm
 import os
 import argparse
 from new.data.report import Report, Frame
+from new.data.embs_dataset import EmbsDataset
 import torch
 from typing import Dict
 
@@ -60,7 +61,7 @@ def embed_frames(model, report, files_limit):
 
 def get_reports_embeddings(path_to_reports: str, save_dir: str, embs_name: str, files_limit=80):
     embeddings = []
-
+    report_ids = []
     model = Code2Seq.load("java")
 
     for root, _, files in filter(lambda x: (x[0] == path_to_reports), os.walk(path_to_reports)):
@@ -68,13 +69,17 @@ def get_reports_embeddings(path_to_reports: str, save_dir: str, embs_name: str, 
             path_to_file = os.path.join(path_to_reports, file)
             report = Report.load_from_base_report(path_to_file)
             report_embeddings = embed_frames(model, report, files_limit)
-
+            report_ids.append(report.id)
             for i in range(len(report.frames), files_limit):
                 report_embeddings.append(zeros())
 
             embeddings.extend(report_embeddings)
-
-    torch.save(torch.FloatTensor(embeddings), os.path.join(save_dir, embs_name))
+    reports_count = len(report_ids)
+    embs_dataset = EmbsDataset(report_ids, torch.FloatTensor(embeddings).reshape(reports_count,
+                                                                                 files_limit,
+                                                                                 EMBEDDING_SIZE))
+    torch.save(embs_dataset,
+               os.path.join(save_dir, embs_name))
 
 
 if __name__ == "__main__":
