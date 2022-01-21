@@ -1,18 +1,14 @@
-from pathlib import Path
-from typing import List, Optional, Tuple, Union
+from typing import List, Optional, Union
 
 import attr
-import numpy as np
 import pytorch_lightning as pl
 import torch
 from sklearn.model_selection import train_test_split
-from torch import Tensor
 from torch.nn.functional import pad
 from torch.utils.data import DataLoader
-from torch.utils.data.dataset import Dataset, T_co
+from torch.utils.data.dataset import Dataset
 
 from new.data.report import Report
-from new.model.report_encoders.report_encoder import ReportEncoder
 
 
 class ReportsDataModule(pl.LightningDataModule):

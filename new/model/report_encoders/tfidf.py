@@ -7,6 +7,7 @@ from torch import Tensor
 
 from new.data.report import Report
 from new.model.report_encoders.report_encoder import ReportEncoder
+from new.model.report_encoders.utils import tokenize_frame
 
 
 class TfIdfReportEncoder(ReportEncoder):
@@ -14,14 +15,6 @@ class TfIdfReportEncoder(ReportEncoder):
         super().__init__()
         self.min_df = min_df
         self.max_len = max_len
-
-    @staticmethod
-    def split_into_subtokens(name: str):
-        return [word.lower() for word in split(r'(?=[A-Z])', name) if word]
-
-    @staticmethod
-    def tokenize(doc: str):
-        return (word.lower() for token in doc.split(".") for word in TfIdfReportEncoder.split_into_subtokens(token))
 
     @staticmethod
     def _split_reports(reports: List[Report]):
@@ -35,8 +28,8 @@ class TfIdfReportEncoder(ReportEncoder):
         return method_docs, namespace_docs
 
     def fit(self, reports: List[Report], target: List[List[int]]) -> 'ReportEncoder':
-        self.method_vectorizer = TfidfVectorizer(tokenizer=self.tokenize, min_df=self.min_df)
-        self.namespace_vectorizer = TfidfVectorizer(tokenizer=self.tokenize, min_df=self.min_df)
+        self.method_vectorizer = TfidfVectorizer(tokenizer=tokenize_frame, min_df=self.min_df)
+        self.namespace_vectorizer = TfidfVectorizer(tokenizer=tokenize_frame, min_df=self.min_df)
 
         method_docs, namespace_docs = self._split_reports(reports)
 
