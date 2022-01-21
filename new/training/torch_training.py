@@ -1,9 +1,7 @@
-from pathlib import Path
-from typing import List, Any, Optional
+from typing import List, Any
 
 import pytorch_lightning as pl
 import torch
-import torch.nn as nn
 from pytorch_lightning import Trainer
 from torch.optim import Adam
 from torchmetrics import MetricCollection
@@ -22,6 +20,9 @@ class TrainingModule(pl.LightningModule):
         self.train_metrics = MetricCollection([Precision(), Recall(), TopkAccuracy(3)])
         self.val_metrics = MetricCollection([Precision(), Recall(), TopkAccuracy(3)])
 
+        self.softmax = torch.nn.Softmax(dim=-1)
+        self.celoss = torch.nn.CrossEntropyLoss()
+
     def training_step(self, batch, batch_idx):
         reports, target, masks = batch
         mask = torch.cat(masks, dim=1)
@@ -32,12 +33,13 @@ class TrainingModule(pl.LightningModule):
             loss = -self.tagger.crf(emissions, target, mask)
         else:
             scores = self.tagger.forward(reports, masks)
-            loss = nn.functional.cross_entropy(scores.transpose(1, 2), target, ignore_index=2)
+            loss = self.celoss(scores.permute(1, 2, 0), target.T)
 
         with torch.no_grad():
             scores = self.tagger.forward(reports, masks)
             preds = scores.argmax(dim=-1)
 
+        scores = self.softmax(scores)
         self.train_metrics.update(preds, target, mask, scores=scores)
 
         self.log("train_loss", loss)
@@ -54,12 +56,13 @@ class TrainingModule(pl.LightningModule):
             loss = -self.tagger.crf(emissions, target, mask)
         else:
             scores = self.tagger.forward(reports, masks)
-            loss = nn.functional.cross_entropy(scores.transpose(1, 2), target, ignore_index=2)
+            loss = self.celoss(scores.permute(1, 2, 0), target.T)
 
         with torch.no_grad():
             scores = self.tagger.forward(reports, masks)
             preds = scores.argmax(dim=-1)
 
+        scores = self.softmax(scores)
         self.val_metrics.update(preds, target, mask, scores=scores)
 
         return loss
@@ -78,9 +81,9 @@ class TrainingModule(pl.LightningModule):
         return Adam(self.parameters(), lr=1e-3)
 
 
-def train_lstm_tagger(tagger: LstmTagger, reports: List[Report], target: List[List[int]],
-                      cached_dataset_path: Optional[Path] = None) -> LstmTagger:
-    datamodule = ReportsDataModule(reports, target, 4, 80)
+def train_lstm_tagger(tagger: LstmTagger, reports: List[Report], target: List[List[int]], batch_size: int,
+                      max_len: int) -> LstmTagger:
+    datamodule = ReportsDataModule(reports, target, batch_size, max_len)
     model = TrainingModule(tagger)
 
     trainer = Trainer(gpus=1)
