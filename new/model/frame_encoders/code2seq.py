@@ -19,7 +19,7 @@ class Code2SeqFrameEncoder(FrameEncoder):
 
     @lru_cache(maxsize=10000)
     def encode(self, frame: Frame) -> torch.Tensor:
-        code = base64.b64decode(frame.code.decode("UTF-8"))
+        code = frame.get_code_decoded()
         if code != "":
             with open(Code2SeqFrameEncoder._tmp_file_name, "w") as f:
                 f.write(code)

@@ -11,7 +11,7 @@ from pathlib import Path
 from tqdm import tqdm
 
 class ChangedMethodsFinder:
-    file_extension = {'java': '.*.java', 'kotlin':'.*.kt'}
+    file_extension = {'java': '.*.java', 'kotlin': '.*.kt'}
 
     def __init__(self, path='.'):
         self.repo = None
@@ -115,18 +115,12 @@ class ChangedMethodsFinder:
         return all_changed_methods
 
 
-    def find_changed_methods(self, path='.', commits = ["HEAD", "HEAD~1"]):
+    def find_changed_methods(self, path='.', commits = []):
+        if not commits:
+            commits = ["HEAD", "HEAD~1"]
         self.open_repo(path)
         diff_files = self.collect_modified_files_last_two_commits(commits)
         java_changed_methods = self.find_changed_methods_by_language('java', diff_files, commits)
         kotlin_changed_methods = self.find_changed_methods_by_language('kotlin', diff_files, commits)
         return java_changed_methods.union(kotlin_changed_methods)
 
-
-if __name__ == "__main__":
-    path = '.'
-    if len(sys.argv) > 1:
-            path = sys.argv[1]
-    cmf = ChangedMethodsFinder()
-    commits = ['ecdd37cc44f9beb6870c78c3432b1fddcdab8292~1','ecdd37cc44f9beb6870c78c3432b1fddcdab8292']
-    print(cmf.find_changed_methods(path, commits))
