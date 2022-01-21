@@ -1,60 +1,63 @@
-from typing import List, Dict, Optional
+from typing import List, Dict
 import json
 import attr
 import pickle
-import torch
+import base64
 
-@attr.s(frozen=False, auto_attribs=True)
+
+@attr.s(frozen=True, auto_attribs=True)
 class Frame:
     code: str
     meta: Dict
-    cached_embedding: Optional[torch.Tensor]
 
+    def get_code_decoded(self):
+        return base64.b64decode(self.code).decode("UTF-8")
 
-@attr.s(frozen=False, auto_attribs=True)
+@attr.s(frozen=True, auto_attribs=True)
 class Report:
     id: int
     exceptions: str
     hash: str
     frames: List[Frame]
 
-    def fill_frames(self, base_report: Dict):
-        self.frames = []
+    @staticmethod
+    def _read_frames_from_base(self, base_report: Dict):
+        frames = []
         for frame in base_report['frames']:
             method_meta = {'method_name': frame['method_name'],
                            'file_name': frame['file_name'],
                            'line': frame['line_number'],
                            'exception_class': self.exceptions}
 
-            new_frame = Frame('', method_meta, None)
-            self.frames.append(new_frame)
+            new_frame = Frame('', method_meta)
+            frames.append(new_frame)
 
+        return frames
 
     @staticmethod
     def load_from_base_report(name):
         try:
-            f = open(name, 'r')
-            base_report = json.load(f)
-            f.close()
+            with open(name, 'r') as report_io:
+                base_report = json.load(report_io)
         except json.JSONDecodeError:
+            # а может это и плохая идея
             return Report(0, [], '', [])
 
         exceptions = base_report['class']
         _id = base_report['id']
-        report = Report(_id, exceptions, '', [])
-        report.fill_frames(base_report)
-        return report
+        frames = Report._read_frames_from_base(base_report)
+        report = Report(_id, exceptions, '', frames)
 
+        return report
 
     @staticmethod
     def load_report(name: str):
-        return pickle.load(open(name, 'rb'))
-
+        with open(name, 'rb') as report_io:
+            pickle.load(report_io)
 
     def save_report(self, name: str):
-        f = open(name, 'wb')
-        pickle.dump(self, f)
-        f.close()
+        with open(name, 'wb') as report_io:
+            pickle.dump(self, report_io)
 
     def frames_count(self):
         return len(self.frames)

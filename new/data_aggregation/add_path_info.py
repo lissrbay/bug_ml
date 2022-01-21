@@ -6,7 +6,7 @@ from collections import defaultdict
 from git import Repo, db
 from tqdm import tqdm
 from new.data.report import Report, Frame
-from typing import List, Dict
+from typing import List, Dict, Tuple
 
 
 def list_files_in_commit(commit: str, repo: Repo):
@@ -20,7 +20,7 @@ def list_files_in_commit(commit: str, repo: Repo):
     return java_files
 
 
-def get_method_path_and_name(frame: Frame):
+def get_method_path_and_name(frame: Frame) -> Tuple[str, str]:
     path = frame.meta['method_name']
     path = path.split('$')[0]
     path = path.split('.')
@@ -29,36 +29,42 @@ def get_method_path_and_name(frame: Frame):
     return path, method
 
 
-def find_file_for_frame(frame: Frame, matching_files: List[str]):
-    frame.meta['path'] = ""
+def find_file_for_frame(frame: Frame, matching_files: List[str]) -> str:
     for file_path in matching_files:
         if frame.meta['file_name'] in file_path:
-            frame.meta['path'] = file_path
-            break
+            return file_path
 
-    return frame
+    return ""
 
 
-def add_paths_to_report(report: Report, commit_files:List[List[str]], file_limit: int):
-    for frame in report.frames[:80]:
+def add_paths_to_one_report(report: Report, commit_files:List[List[str]], file_limit: int) -> Report:
+    frames_with_paths = []
+    for frame in report.frames[:file_limit]:
         matching_files_for_frame = commit_files[frame.meta['file_name']]
-        find_file_for_frame(frame, matching_files_for_frame)
+        frame_path = find_file_for_frame(frame, matching_files_for_frame)
+        frame_meta = frame.meta
+        frame_meta['path'] = frame_path
+        frames_with_paths.append(Frame(frame.code, frame_meta))
 
-    return report
+    return Report(report.id, report.exceptions, report.hash, frames_with_paths)
 
 
 def add_paths_to_all_reports(from_repo: Repo, path_to_reports: str, path_to_reports_save: str, file_limit=80):
+    reports_success = 0
     for root, _, files in filter(lambda x: (x[0] == path_to_reports), os.walk(path_to_reports)):
         for file in tqdm(files):
             path_to_file = os.path.join(path_to_reports, file)
             report = Report.load_report(path_to_file)
-            if report == {}:
+            if report.id == 0:
                 continue
             commit = from_repo.commit(report.hash + '~1')
             commit_files = list_files_in_commit(commit, from_repo)
 
-            add_paths_to_report(report, commit_files, file_limit=file_limit)
+            report = add_paths_to_one_report(report, commit_files, file_limit=file_limit)
             report.save_report(os.path.join(path_to_reports_save, file))
+            reports_success += 1
+
+    print(f"Successed add paths for {reports_success} reports.")
 
 
 def parse_args():
@@ -71,10 +77,10 @@ def parse_args():
     return parser.parse_args()
 
 
-def main(intellij_path: str, reports_path: str, files_limit: int = 80):
+def add_paths_to_reports(intellij_path: str, reports_path: str, files_limit: int = 80):
     repo = Repo(intellij_path, odbt=db.GitDB)
 
-    path_to_reports = os.path.join(reports_path, "reports", "tmp")
+    path_to_reports = os.path.join(reports_path, "labeled_reports")
     path_to_reports_save = os.path.join(reports_path, "labeled_reports")
 
     add_paths_to_all_reports(repo, path_to_reports, path_to_reports_save, files_limit)
@@ -86,4 +92,4 @@ if __name__ == "__main__":
     intellij_path = args.intellij_path
     reports_path = args.reports_path
     files_limit = args.files_limit
-    main(intellij_path, reports_path, files_limit)
+    add_paths_to_reports(intellij_path, reports_path, files_limit)

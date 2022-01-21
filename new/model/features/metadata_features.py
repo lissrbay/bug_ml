@@ -2,9 +2,7 @@ from typing import List
 
 from new.data.report import Report, Frame
 from new.model.features.feature import BaseFeature
-from data_aggregation.add_code_data import get_report_code
-import base64
-import re
+import numpy as np
 
 
 class MetadataFeaturesTransformer(BaseFeature):
@@ -32,11 +30,11 @@ class MetadataFeaturesTransformer(BaseFeature):
         self.exception_class.append(report.exceptions)
 
     def extract_method_file_position(self, frame: Frame):
-        self.method_file_position.append(int(frame['line_number']))
+        self.method_file_position.append(int(frame.meta['line_number']))
 
     def transform(self, report: Report) -> List[List[float]]:
         for i, frame in enumerate(report.frames):
-            method_name = frame['method_name']
+            method_name = frame.meta['method_name']
             self.extract_method_name_features(method_name)
 
             self.extract_exception_class(report)
@@ -45,4 +43,14 @@ class MetadataFeaturesTransformer(BaseFeature):
 
             self.method_stack_position.append(i)
 
-            self.label.append(frame['label'])
+            self.label.append(frame.meta['label'])
+
+        return list(np.vstack(self.exception_class,
+                              self.has_runs,
+                              self.has_dollars,
+                              self.is_parallel,
+                              self.method_file_position,
+                              self.is_java_standart,
+                              self.label,
+                              self.method_stack_position,
+                              ))

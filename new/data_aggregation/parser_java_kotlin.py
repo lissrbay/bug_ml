@@ -11,14 +11,12 @@ class AST:
         self.bounds = ()
         self.type = ''
 
-
     def __repr__(self):
         s = 'Tree(label = ' + self.label + ', bounds=' + str(self.bounds) + ', type=' + self.type + ', '
         for child in self.children:
             s += repr(child) + ', '
         s += ")"
         return s
-
 
     def get_method_names_and_bounds(self):
         paths = self.paths()
@@ -32,7 +30,6 @@ class AST:
                     method_names_and_bounds.add((full_name, (i[1], i[2])))
                 full_name += ': '
         return list(method_names_and_bounds)
-
 
     def paths(self, node=None, path=None):
         if node == None:
@@ -63,7 +60,6 @@ class Parser:
         'pattern_static' : re.compile("(static)\s+\{")}
     declaration_patterns = []
 
-
     def __init__(self, language='java'):
         self.brackets_positions = []
         self.labels = []
@@ -92,13 +88,11 @@ class Parser:
         ast.type = 'file'
         return ast
 
-
     def create_node(self, label=('', '')):
         root = AST(children=[])
         root.label = label[0]
         root.type = label[1]
         return root
-
 
     def construct_ast(self, label=('', ''), pos = 0, curr_position=0):
         root = self.create_node(label)
@@ -122,7 +116,6 @@ class Parser:
 
         return root, -1
 
-
     def recursive_parsing(self, txt, pos=0):
         next_pos = 0
         for i, char in enumerate(txt[pos:], pos):
@@ -136,7 +129,6 @@ class Parser:
                 self.brackets_positions.append((i, '}'))
                 return i
 
-
     def fill_spaces(self):
         j = 0
         for i in range(1,len(self.brackets_positions)):
@@ -145,7 +137,6 @@ class Parser:
                 continue
             self.labels.insert(j, ('code', 'code', self.brackets_positions[0]))
             j += 1
-
 
     def find_declarations(self, code):
         all_declarations = []
@@ -159,15 +150,8 @@ class Parser:
         all_declarations.sort(key=lambda x: x[2])
         self.labels = all_declarations
 
-
     def find_declarations_by_pattern(self, pattern, code, type):
         declarations = [(m.group(0), type, m.end(0)) for m in re.finditer(pattern, code)]
         if type == "method":
             declarations = [(i[0].split('(')[0], i[1], i[2]) for i in declarations]
         return declarations
-
-
-if __name__ == "__main__":
-    kp = Parser(language='kotlin')
-    f = open("C:\\Users\\lissrbay\\Desktop\\bugml\\ex.kt", 'r')
-    print(kp.parse(f.readlines()))
