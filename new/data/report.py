@@ -21,13 +21,12 @@ class Report:
     frames: List[Frame]
 
     @staticmethod
-    def _read_frames_from_base(self, base_report: Dict):
+    def _read_frames_from_base(base_report: Dict):
         frames = []
         for frame in base_report['frames']:
             method_meta = {'method_name': frame['method_name'],
                            'file_name': frame['file_name'],
-                           'line': frame['line_number'],
-                           'exception_class': self.exceptions}
+                           'line': frame['line_number']}
 
             new_frame = Frame('', method_meta)
             frames.append(new_frame)
@@ -41,7 +40,8 @@ class Report:
                 base_report = json.load(report_io)
         except json.JSONDecodeError:
             # а может это и плохая идея
-            return Report(0, [], '', [])
+            print(f'Broken report {name}')
+            raise
 
         exceptions = base_report['class']
         _id = base_report['id']
@@ -53,7 +53,12 @@ class Report:
     @staticmethod
     def load_report(name: str):
         with open(name, 'rb') as report_io:
-            pickle.load(report_io)
+            try:
+                return pickle.load(report_io)
+            except Exception:
+                print(name)
+                raise
+
 
     def save_report(self, name: str):
         with open(name, 'wb') as report_io:

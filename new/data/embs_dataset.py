@@ -9,9 +9,9 @@ from new.data.report import Report
 
 
 class EmbsDataset(Dataset):
-    def __init__(self, reports: List[Report], embs: Tensor):
+    def __init__(self, report_ids: List[int], embs: Tensor):
         self.embs = embs
-        self.report_ids = [report.id for report in reports]
+        self.report_ids = report_ids
         self.report_id_to_emb_pos = {id_: pos for pos, id_ in enumerate(self.report_ids)}
         self.dim = self.embs.shape[-1]
 
@@ -22,6 +22,6 @@ class EmbsDataset(Dataset):
         return report_id in self.report_id_to_emb_pos
 
     def __getitem__(self, report_id):
-        emb_pos = self.report_idx_to_emb_pos[id]
+        emb_pos = self.report_idx_to_emb_pos[report_id]
 
         return self.embs[emb_pos]

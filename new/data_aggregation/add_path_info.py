@@ -1,10 +1,11 @@
 import argparse
-import json
 import os
 from collections import defaultdict
 
 from git import Repo, db
-from tqdm import tqdm
+
+from constants import REPORTS_SUBDIR
+from new.data_aggregation.utils import iterate_reports
 from new.data.report import Report, Frame
 from typing import List, Dict, Tuple
 
@@ -51,18 +52,17 @@ def add_paths_to_one_report(report: Report, commit_files:List[List[str]], file_l
 
 def add_paths_to_all_reports(from_repo: Repo, path_to_reports: str, path_to_reports_save: str, file_limit=80):
     reports_success = 0
-    for root, _, files in filter(lambda x: (x[0] == path_to_reports), os.walk(path_to_reports)):
-        for file in tqdm(files):
-            path_to_file = os.path.join(path_to_reports, file)
-            report = Report.load_report(path_to_file)
-            if report.id == 0:
-                continue
-            commit = from_repo.commit(report.hash + '~1')
-            commit_files = list_files_in_commit(commit, from_repo)
+    for file_name in iterate_reports(path_to_reports):
+        path_to_file = os.path.join(path_to_reports, file_name)
+        report = Report.load_report(path_to_file)
+        if report.id == 0:
+            continue
+        commit = from_repo.commit(report.hash + '~1')
+        commit_files = list_files_in_commit(commit, from_repo)
 
-            report = add_paths_to_one_report(report, commit_files, file_limit=file_limit)
-            report.save_report(os.path.join(path_to_reports_save, file))
-            reports_success += 1
+        report = add_paths_to_one_report(report, commit_files, file_limit=file_limit)
+        report.save_report(os.path.join(path_to_reports_save, file_name))
+        reports_success += 1
 
     print(f"Successed add paths for {reports_success} reports.")
 
@@ -80,8 +80,8 @@ def parse_args():
 def add_paths_to_reports(intellij_path: str, reports_path: str, files_limit: int = 80):
     repo = Repo(intellij_path, odbt=db.GitDB)
 
-    path_to_reports = os.path.join(reports_path, "labeled_reports")
-    path_to_reports_save = os.path.join(reports_path, "labeled_reports")
+    path_to_reports = os.path.join(reports_path, REPORTS_SUBDIR)
+    path_to_reports_save = os.path.join(reports_path, REPORTS_SUBDIR)
 
     add_paths_to_all_reports(repo, path_to_reports, path_to_reports_save, files_limit)
 

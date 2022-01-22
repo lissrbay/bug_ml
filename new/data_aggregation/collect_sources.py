@@ -4,7 +4,9 @@ import re
 import base64
 
 from git import Repo, db
-from tqdm import tqdm
+
+from constants import REPORTS_SUBDIR
+from new.data_aggregation.utils import iterate_reports
 from new.data.report import Report, Frame
 
 
@@ -44,36 +46,25 @@ def get_sources_for_report(repo: Repo, report: Report, commit: str, full_save_pa
             except Exception:
                 print(os.path.join(full_save_path, frame.meta['file_name']))
 
-    return Report(report.id, report.exceptions, report.hash, frame_code)
-
-
-def create_subfolder(path: str):
-    try:
-        os.mkdir(path)
-    except FileExistsError:
-        # dir already exist
-        pass
+    return Report(report.id, report.exceptions, report.hash, frames_with_codes)
 
 
 def collect_sources_for_all_reports(repo: Repo, save_path: str, path_to_reports: str, file_limit=80):
     reports_success = 0
-    for root, _, files in filter(lambda x: (x[0] == path_to_reports), os.walk(path_to_reports)):
-        for file in tqdm(files):
-            path_to_file = os.path.join(path_to_reports, file)
-            report = Report.load_report(path_to_file)
-            if report.hash == "":
-                continue
+    for file_name in iterate_reports(path_to_reports, format='.json'):
+        path_to_file = os.path.join(path_to_reports, file_name)
+        report = Report.load_report(path_to_file)
+        if report.hash == "":
+            continue
 
-            full_save_path = os.path.join(save_path, str(report.id))
-            create_subfolder(full_save_path)
+        full_save_path = os.path.join(save_path, str(report.id))
+        flag = is_labeled_inside_window(report, file_limit)
+        if not flag:
+            continue
 
-            flag = is_labeled_inside_window(report, file_limit)
-            if not flag:
-                continue
-
-            report = get_sources_for_report(repo, report, report.hash, full_save_path, file_limit)
-            report.save_report(path_to_file)
-            reports_success += 1
+        report = get_sources_for_report(repo, report, report.hash, full_save_path, file_limit)
+        report.save_report(path_to_file)
+        reports_success += 1
 
     print(f"Successed collect code data for {reports_success} reports.")
 
@@ -91,8 +82,8 @@ def parse_args():
 def collect_sources_for_reports(intellij_path: str, reports_path: str, files_limit: int):
     repo = Repo(intellij_path, odbt=db.GitDB)
 
-    path_to_reports = os.path.join(reports_path, "labeled_reports")
-    save_path = os.path.join(reports_path, "labeled_reports")
+    path_to_reports = os.path.join(reports_path, REPORTS_SUBDIR)
+    save_path = os.path.join(reports_path, REPORTS_SUBDIR, 'sources')
     collect_sources_for_all_reports(repo, save_path, path_to_reports, files_limit)
 
 

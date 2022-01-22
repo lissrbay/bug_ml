@@ -50,12 +50,13 @@ class ChangedMethodsFinder:
         code = re.sub(' +', ' ', code)
         return re.sub('\t+', '', code)
 
-
+    @staticmethod
     def open_repo(self, path='.'):
         try:
             self.repo = Repo(path, odbt=db.GitDB)
         except Exception:
             print("Check path to repository. Maybe, you should write path in double quotes\"\"")
+            raise
 
 
     def code_fragment(self, bounds, code):
@@ -101,7 +102,7 @@ class ChangedMethodsFinder:
         return ast
 
 
-    def find_changed_methods_by_language(self, language='java', diff_files=[], commits=["HEAD", "HEAD~1"]):
+    def find_changed_methods_by_language(self, language='java', diff_files=[], commits=("HEAD", "HEAD~1")):
         self.trees_a, self.trees_b = dict(), dict()
         self.codes_a, self.codes_b = dict(), dict()
         all_changed_methods = set()
@@ -115,9 +116,7 @@ class ChangedMethodsFinder:
         return all_changed_methods
 
 
-    def find_changed_methods(self, path='.', commits = []):
-        if not commits:
-            commits = ["HEAD", "HEAD~1"]
+    def find_changed_methods(self, path='.', commits=("HEAD", "HEAD~1")):
         self.open_repo(path)
         diff_files = self.collect_modified_files_last_two_commits(commits)
         java_changed_methods = self.find_changed_methods_by_language('java', diff_files, commits)

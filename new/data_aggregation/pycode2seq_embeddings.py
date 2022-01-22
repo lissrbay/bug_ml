@@ -1,19 +1,16 @@
-import logging
 from pycode2seq import Code2Seq
-from tqdm import tqdm
 import os
 import argparse
 from new.data.report import Report, Frame
 from new.data.embs_dataset import EmbsDataset
 import torch
 from typing import Dict
-
-EMBEDDING_SIZE = 320
-TMP_FILE = '_tmp.txt'
+from new.data_aggregation.utils import iterate_reports
+from new.constants import CODE2SEQ_EMBEDDING_SIZE, CODE2SEQ_TMP_FILE, REPORTS_SUBDIR
 
 
 def zeros() -> torch.Tensor:
-    return torch.zeros(EMBEDDING_SIZE)
+    return torch.zeros(CODE2SEQ_EMBEDDING_SIZE)
 
 
 def get_file_embeddings(model, filename: str) -> torch.Tensor:
@@ -30,7 +27,7 @@ def get_method_embedding(method_embeddings, method_name: str) -> torch.Tensor:
 
 
 def code_to_tmp(code: str):
-    with open(TMP_FILE, 'w') as tmp_file:
+    with open(CODE2SEQ_TMP_FILE, 'w') as tmp_file:
         tmp_file.write(code)
 
 
@@ -40,14 +37,15 @@ def embed_frame(model, frame: Frame, cashed_preds: Dict) -> torch.Tensor:
         if input_filename in cashed_preds:
             method_embeddings = cashed_preds[input_filename]
         else:
-            code_to_tmp(frame.code)
-            method_embeddings = get_file_embeddings(model, TMP_FILE)
+            code_to_tmp(frame.get_code_decoded())
+            method_embeddings = get_file_embeddings(model, CODE2SEQ_TMP_FILE)
             cashed_preds[input_filename] = method_embeddings
         embedding = get_method_embedding(method_embeddings, frame.meta['method_name'])
     else:
         embedding = zeros()
 
     return embedding
+
 
 def embed_frames(model, report, files_limit):
     cashed_preds = {}
@@ -59,25 +57,25 @@ def embed_frames(model, report, files_limit):
     return embeddings
 
 
-def get_reports_embeddings(path_to_reports: str, save_dir: str, embs_name: str, files_limit=80):
+def get_reports_embeddings(raw_reports_path: str, save_dir: str, embs_name: str, files_limit=80):
     embeddings = []
     report_ids = []
     model = Code2Seq.load("java")
+    path_to_reports = os.path.join(raw_reports_path, REPORTS_SUBDIR)
+    for file_name in iterate_reports(path_to_reports):
+        path_to_file = os.path.join(path_to_reports, file_name)
+        report = Report.load_report(path_to_file)
+        report_embeddings = embed_frames(model, report, files_limit)
+        report_ids.append(report.id)
+        for i in range(len(report.frames), files_limit):
+            report_embeddings.append(zeros())
 
-    for root, _, files in filter(lambda x: (x[0] == path_to_reports), os.walk(path_to_reports)):
-        for file in tqdm(files):
-            path_to_file = os.path.join(path_to_reports, file)
-            report = Report.load_from_base_report(path_to_file)
-            report_embeddings = embed_frames(model, report, files_limit)
-            report_ids.append(report.id)
-            for i in range(len(report.frames), files_limit):
-                report_embeddings.append(zeros())
-
-            embeddings.extend(report_embeddings)
+        embeddings.extend(report_embeddings)
+        break
     reports_count = len(report_ids)
-    embs_dataset = EmbsDataset(report_ids, torch.FloatTensor(embeddings).reshape(reports_count,
+    embs_dataset = EmbsDataset(report_ids,  torch.cat(embeddings).reshape(reports_count,
                                                                                  files_limit,
-                                                                                 EMBEDDING_SIZE))
+                                                                                 CODE2SEQ_EMBEDDING_SIZE))
     torch.save(embs_dataset,
                os.path.join(save_dir, embs_name))
 

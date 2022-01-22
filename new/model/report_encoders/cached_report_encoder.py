@@ -1,10 +1,8 @@
 from new.data.report import Report
-from typing import List
 
 from torch import Tensor
 from torch.nn.functional import pad
 import torch
-import numpy as np
 
 from new.model.report_encoders.report_encoder import ReportEncoder
 
