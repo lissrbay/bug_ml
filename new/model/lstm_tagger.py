@@ -109,7 +109,6 @@ class LstmTagger(BlamedTagger, nn.Module):
         return self
 
     def predict(self, report: Report) -> List[float]:
-
         with torch.no_grad():
             preds = self.forward_single(report)
             preds = preds[:, 0, 1]

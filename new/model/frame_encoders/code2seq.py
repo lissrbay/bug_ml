@@ -8,18 +8,19 @@ from pycode2seq.inference.model.model import Model as EmbModel
 
 from new.data.report import Frame
 from new.model.frame_encoders.frame_encoder import FrameEncoder
+from new.constants import CODE2SEQ_EMBEDDING_SIZE, CODE2SEQ_TMP_FILE
 
 
 class Code2SeqFrameEncoder(FrameEncoder):
-    _tmp_file_name = "tmp.java"
-    _emb_dim = 320
+    _tmp_file_name = CODE2SEQ_TMP_FILE
+    _emb_dim = CODE2SEQ_EMBEDDING_SIZE
 
     def __init__(self, name: str):
         self.emb_model = EmbModel.load(name)
 
     @lru_cache(maxsize=10000)
     def encode(self, frame: Frame) -> torch.Tensor:
-        code = base64.b64decode(frame.code.decode("UTF-8"))
+        code = frame.get_code_decoded()
         if code != "":
             with open(Code2SeqFrameEncoder._tmp_file_name, "w") as f:
                 f.write(code)
