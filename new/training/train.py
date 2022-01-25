@@ -21,23 +21,10 @@ def read_reports(reports_path: str) -> Tuple[List[Report], List[List[int]]]:
     reports_path = Path(reports_path)
     for report_file in reports_path.glob("*.json"):
         try:
-            with open(report_file, "r") as f:
-                parsed_report = json.load(f)
-            if parsed_report["frames"]:
-                frames = [Frame(name=frame["method_name"],
-                                line=frame["line_number"],
-                                code=frame["file_name"],
-                                meta="") for frame in parsed_report["frames"]]
-                target = [frame["label"] for frame in parsed_report["frames"]]
-
-                report = Report(
-                    id=parsed_report["id"],
-                    exceptions=parsed_report["class"],
-                    frames=frames
-                )
-
-                reports.append(report)
-                targets.append(target)
+            report = Report.load_from_base_report(report_file)
+            reports.append(report)
+            target = [frame.meta["label"] for frame in report.frames]
+            targets.append(target)
         except JSONDecodeError:
             print(f"Reading report {report_file} failed")
             continue

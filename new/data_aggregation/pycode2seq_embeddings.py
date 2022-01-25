@@ -71,7 +71,7 @@ def get_reports_embeddings(raw_reports_path: str, save_dir: str, embs_name: str,
             report_embeddings.append(zeros())
 
         embeddings.extend(report_embeddings)
-        break
+
     reports_count = len(report_ids)
     embs_dataset = EmbsDataset(report_ids,  torch.cat(embeddings).reshape(reports_count,
                                                                                  files_limit,

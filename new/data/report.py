@@ -27,6 +27,11 @@ class Report:
             method_meta = {'method_name': frame['method_name'],
                            'file_name': frame['file_name'],
                            'line': frame['line_number']}
+            if 'label' in frame:
+                method_meta['label'] = frame['label']
+
+            if 'file_path' in frame:
+                method_meta['file_path'] = frame['file_path']
 
             new_frame = Frame('', method_meta)
             frames.append(new_frame)
@@ -35,14 +40,8 @@ class Report:
 
     @staticmethod
     def load_from_base_report(name):
-        try:
-            with open(name, 'r') as report_io:
-                base_report = json.load(report_io)
-        except json.JSONDecodeError:
-            # а может это и плохая идея
-            print(f'Broken report {name}')
-            raise
-
+        with open(name, 'r') as report_io:
+            base_report = json.load(report_io)
         exceptions = base_report['class']
         _id = base_report['id']
         frames = Report._read_frames_from_base(base_report)
@@ -53,11 +52,8 @@ class Report:
     @staticmethod
     def load_report(name: str):
         with open(name, 'rb') as report_io:
-            try:
-                return pickle.load(report_io)
-            except Exception:
-                print(name)
-                raise
+            return pickle.load(report_io)
+
 
 
     def save_report(self, name: str):

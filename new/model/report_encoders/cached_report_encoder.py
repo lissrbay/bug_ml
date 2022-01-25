@@ -13,16 +13,16 @@ class CachedReportEncoder(ReportEncoder):
         self.precomputed_embs = torch.load(path_to_precomputed_embs)
 
     def encode_report(self, report: Report) -> Tensor:
-        report_id = report.id
+        report_id = str(report.id)
         if report_id in self.precomputed_embs:
             report_embs = self.precomputed_embs[report_id]
             pad_size = self.dim() - len(report_embs)
-            return pad(report_embs, (pad_size, self.emb_dim()))
+            return pad(report_embs, (pad_size, 0))
 
-        return self.torch.empty((self.dim(), self.emb_dim()))
+        return torch.empty((self.dim(), self.emb_dim()))
 
     def dim(self):
-        return self.precomputed_embs.shape[1]
+        return self.precomputed_embs.frames_count
 
     def emb_dim(self):
-        return self.precomputed_embs.shape[-1]
+        return self.precomputed_embs.dim

@@ -14,6 +14,7 @@ class EmbsDataset(Dataset):
         self.report_ids = report_ids
         self.report_id_to_emb_pos = {id_: pos for pos, id_ in enumerate(self.report_ids)}
         self.dim = self.embs.shape[-1]
+        self.frames_count = embs.shape[1]
 
     def __len__(self):
         return len(self.report_ids)
@@ -22,6 +23,6 @@ class EmbsDataset(Dataset):
         return report_id in self.report_id_to_emb_pos
 
     def __getitem__(self, report_id):
-        emb_pos = self.report_idx_to_emb_pos[report_id]
+        emb_pos = self.report_id_to_emb_pos[report_id]
 
         return self.embs[emb_pos]
