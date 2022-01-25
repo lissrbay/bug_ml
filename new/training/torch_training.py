@@ -1,9 +1,7 @@
-from pathlib import Path
-from typing import List, Any, Optional
+from typing import List, Any
 
 import pytorch_lightning as pl
 import torch
-import torch.nn as nn
 from pytorch_lightning import Trainer
 from torch.optim import Adam
 from torchmetrics import MetricCollection
@@ -22,45 +20,50 @@ class TrainingModule(pl.LightningModule):
         self.train_metrics = MetricCollection([Precision(), Recall(), TopkAccuracy(3)])
         self.val_metrics = MetricCollection([Precision(), Recall(), TopkAccuracy(3)])
 
-    def training_step(self, batch, batch_idx):
-        inputs, labels, mask = batch
+        self.softmax = torch.nn.Softmax(dim=-1)
+        self.celoss = torch.nn.CrossEntropyLoss()
 
-        inputs = self.tagger.report_encoder.encode_trainable(inputs, mask)
+    def training_step(self, batch, batch_idx):
+        reports, target, masks = batch
+        mask = torch.cat(masks, dim=1)
 
         if self.tagger.with_crf:
-            emissions = self.tagger.calc_emissions(inputs, mask)
-            loss = -self.tagger.crf(emissions, labels, mask)
+            emissions = torch.cat([self.tagger.calc_emissions(report, mask) for report, mask in zip(reports, masks)],
+                                  dim=1)
+            loss = -self.tagger.crf(emissions, target, mask)
         else:
-            scores = self.tagger.forward(inputs, mask)
-            loss = nn.functional.cross_entropy(scores.transpose(1, 2), labels, ignore_index=2)
+            scores = self.tagger.forward(reports, masks)
+            loss = self.celoss(scores.permute(1, 2, 0), target.T)
 
         with torch.no_grad():
-            scores = self.tagger.forward(inputs, mask)
+            scores = self.tagger.forward(reports, masks)
             preds = scores.argmax(dim=-1)
 
-        self.train_metrics.update(preds, labels, mask, scores=scores)
+        scores = self.softmax(scores)
+        self.train_metrics.update(preds, target, mask, scores=scores)
 
         self.log("train_loss", loss)
 
         return loss
 
     def validation_step(self, batch, *args):
-        inputs, labels, mask = batch
-
-        inputs = self.tagger.report_encoder.encode_trainable(inputs, mask)
+        reports, target, masks = batch
+        mask = torch.cat(masks, dim=1)
 
         if self.tagger.with_crf:
-            emissions = self.tagger.calc_emissions(inputs, mask)
-            loss = -self.tagger.crf(emissions, labels, mask)
+            emissions = torch.cat([self.tagger.calc_emissions(report, mask) for report, mask in zip(reports, masks)],
+                                  dim=1)
+            loss = -self.tagger.crf(emissions, target, mask)
         else:
-            scores = self.tagger.forward(inputs, mask)
-            loss = nn.functional.cross_entropy(scores.transpose(1, 2), labels, ignore_index=2)
+            scores = self.tagger.forward(reports, masks)
+            loss = self.celoss(scores.permute(1, 2, 0), target.T)
 
         with torch.no_grad():
-            scores = self.tagger.forward(inputs, mask)
+            scores = self.tagger.forward(reports, masks)
             preds = scores.argmax(dim=-1)
 
-        self.val_metrics.update(preds, labels, mask, scores=scores)
+        scores = self.softmax(scores)
+        self.val_metrics.update(preds, target, mask, scores=scores)
 
         return loss
 
@@ -78,9 +81,9 @@ class TrainingModule(pl.LightningModule):
         return Adam(self.parameters(), lr=1e-3)
 
 
-def train_lstm_tagger(tagger: LstmTagger, reports: List[Report], target: List[List[int]],
-                      cached_dataset_path: Optional[Path] = None) -> LstmTagger:
-    datamodule = ReportsDataModule(reports, target, 4, tagger.report_encoder, 80, cached_dataset_path)
+def train_lstm_tagger(tagger: LstmTagger, reports: List[Report], target: List[List[int]], batch_size: int,
+                      max_len: int) -> LstmTagger:
+    datamodule = ReportsDataModule(reports, target, batch_size, max_len)
     model = TrainingModule(tagger)
 
     trainer = Trainer(gpus=1)

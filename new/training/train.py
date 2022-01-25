@@ -13,6 +13,7 @@ from new.model.report_encoders.dummy_report_encoder import DummyReportEncoder
 from new.model.report_encoders.simple_report_encoder import SimpleReportEncoder
 from new.model.report_encoders.tfidf import TfIdfReportEncoder
 from new.training.torch_training import train_lstm_tagger
+from new.model.report_encoders.scaffle_report_encoder import ScaffleReportEncoder
 
 
 def read_reports(reports_path: str) -> Tuple[List[Report], List[List[int]]]:
@@ -45,17 +46,18 @@ def read_reports(reports_path: str) -> Tuple[List[Report], List[List[int]]]:
 
 def train(reports_path: str, save_path: str):
     reports, target = read_reports(reports_path)
+    with open("config.json", "r") as f:
+        config = json.load(f)
 
-    encoder = TfIdfReportEncoder(max_len=256).fit(reports, target)
+    # encoder = TfIdfReportEncoder(max_len=256).fit(reports, target)
+    encoder = ScaffleReportEncoder(70, 100).fit(reports, target)
 
     tagger = LstmTagger(
         encoder,
-        hidden_dim=100, layers_num=1, with_crf=True, with_attention=True, max_len=80
+        hidden_dim=250, layers_num=2, max_len=config["training"]["max_len"]
     )
     # tmp = tagger.predict(reports[0])
-    cached_dataset_path = Path("/home/dumtrii/Downloads/bug_ml_computed")
-    cached_dataset_path = None
-    tagger = train_lstm_tagger(tagger, reports, target, cached_dataset_path)
+    tagger = train_lstm_tagger(tagger, reports, target, **config["training"])
 
     # tagger.fit(reports, target)
     #

@@ -1,0 +1,29 @@
+{
+  "models": {
+    "scuffle": {
+    "encoder" : {
+      "hidden_dim": 70,
+      "word2vec_dim": 100
+    },
+    "tagger": {
+      "hidden_dim": 250,
+      "layers_num": 2
+    }
+  },
+  "deep_analyze": {
+    "encoder": {
+      "max_len": 255
+    },
+    "tagger": {
+      "hidden_dim": 250,
+      "layers_num": 1,
+      "with_crf": true,
+      "with_attention": true
+    }
+  }
+  },
+  "training": {
+    "max_len": 80,
+    "batch_size": 8
+  }
+}
