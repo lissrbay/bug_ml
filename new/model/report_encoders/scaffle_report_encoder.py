@@ -34,7 +34,7 @@ class ScaffleReportEncoder(ReportEncoder, nn.Module):
     def encode_report(self, report: Report) -> Tensor:
         encoded_tokens = []
         for frame in report.frames:
-            method_name_tokens = tokenize_frame(clean_method_name(frame.name))
+            method_name_tokens = tokenize_frame(clean_method_name(frame.meta['method_name']))
             embeddings = []
             for word in method_name_tokens:
                 try:
@@ -54,7 +54,7 @@ class ScaffleReportEncoder(ReportEncoder, nn.Module):
         return encoding[torch.tensor(lengths, device=self.device) - 1, torch.arange(len(report.frames))]
 
     def fit(self, reports: List[Report], target: List[List[int]]) -> 'ReportEncoder':
-        sentences = [list(tokenize_frame(clean_method_name(frame.name)))
+        sentences = [list(tokenize_frame(clean_method_name(frame.meta['method_name'])))
                      for report in reports for frame in report.frames]
         self.word2vec.build_vocab(sentences, progress_per=1000)
         self.word2vec.train(sentences, total_examples=len(sentences), epochs=30, report_delay=1)

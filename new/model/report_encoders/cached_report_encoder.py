@@ -16,13 +16,15 @@ class CachedReportEncoder(ReportEncoder):
         report_id = str(report.id)
         if report_id in self.precomputed_embs:
             report_embs = self.precomputed_embs[report_id]
-            pad_size = self.dim() - len(report_embs)
+            pad_size = self.frame_count - len(report_embs)
             return pad(report_embs, (pad_size, 0))
 
-        return torch.empty((self.dim(), self.emb_dim()))
+        return torch.zeros((self.frame_count, self.dim))
 
-    def dim(self):
+    @property
+    def frame_count(self):
         return self.precomputed_embs.frames_count
 
-    def emb_dim(self):
+    @property
+    def dim(self):
         return self.precomputed_embs.dim

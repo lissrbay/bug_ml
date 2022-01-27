@@ -69,7 +69,8 @@ class LstmTagger(BlamedTagger, nn.Module):
 
     def calc_emissions(self, report: Report, mask: torch.Tensor) -> torch.Tensor:
         features = self.report_encoder.encode_report(report).to(self.device)
-        features = pad(features[:self.max_len, :], (0, 0, 0, self.max_len - features.shape[0])).unsqueeze(1)
+        features = features[:self.max_len]
+        features = pad(features, (0, 0, 0, self.max_len - features.shape[0])).unsqueeze(1)
 
         embeddings = features * mask.unsqueeze(-1)
         res, _ = self.lstm(embeddings)
@@ -92,6 +93,7 @@ class LstmTagger(BlamedTagger, nn.Module):
     def forward_single(self, report: Report, mask: Optional[torch.Tensor] = None) -> torch.Tensor:
         if mask is None:
             mask = torch.tensor([True] * self.max_len).unsqueeze(-1).to(self.device)
+        mask = mask[:self.max_len]
         seq_len, batch_size = mask.shape
         emissions = self.calc_emissions(report, mask)
 

@@ -75,6 +75,12 @@ class TopkAccuracy(Metric):
         inds = scores.topk(self.k, dim=0).indices
         gathered = torch.gather(target, 0, inds).sum(0) > 0
 
+        # if torch.sum(gathered) > 2:
+        #     print(scores)
+        #     print(target)
+        #     print(gathered)
+        #     print(inds)
+
         self.tp += torch.sum(gathered)
         self.total += torch.sum(torch.any(target, dim=0))
 
