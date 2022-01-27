@@ -36,19 +36,19 @@ def train(reports_path: str, save_path: str, model_name: Optional[str]):
         config = json.load(f)
 
     if model_name:
-        if model_name == "scaffle":
-            encoder = ScaffleReportEncoder(**config["scaffle"]["encoder"]).fit(reports, target)
+        if model_name == "scuffle":
+            encoder = ScaffleReportEncoder(**config["models"]["scuffle"]["encoder"]).fit(reports, target)
             tagger = LstmTagger(
                 encoder,
                 max_len=config["training"]["max_len"],
-                **config["scaffle"]["tagger"]
+                **config["models"]["scuffle"]["tagger"]
             )
         elif model_name == "deep_analyze":
-            encoder = TfIdfReportEncoder(**config["deep_analyze"]["encoder"]).fit(reports, target)
+            encoder = TfIdfReportEncoder(**config["models"]["deep_analyze"]["encoder"]).fit(reports, target)
             tagger = LstmTagger(
                 encoder,
                 max_len=config["training"]["max_len"],
-                **config["deep_analyze"]["tagger"]
+                **config["models"]["deep_analyze"]["tagger"]
             )
         else:
             raise ValueError("Wrong model type. Should be scaffle or deep_analyze")
@@ -73,7 +73,7 @@ def main():
     parser.add_argument("--model", type=str, default=None)
     args = parser.parse_args()
 
-    train(args.reports_path, args.save_path, args.model)
+    train(args.reports_path, args.save_path, "scuffle")
 
 
 if __name__ == '__main__':
