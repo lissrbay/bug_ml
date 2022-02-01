@@ -50,7 +50,6 @@ class ChangedMethodsFinder:
         code = re.sub(' +', ' ', code)
         return re.sub('\t+', '', code)
 
-    @staticmethod
     def open_repo(self, path='.'):
         try:
             self.repo = Repo(path, odbt=db.GitDB)
