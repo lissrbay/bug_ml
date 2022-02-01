@@ -49,7 +49,6 @@ class ChangedMethodsFinder:
         code = re.sub(' +', ' ', code)
         return re.sub('\t+', '', code)
 
-
     def code_fragment(self, bounds, code):
         if not bounds:
             return ''
