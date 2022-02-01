@@ -14,8 +14,7 @@ class ChangedMethodsFinder:
     file_extension = {'java': '.*.java', 'kotlin': '.*.kt'}
 
     def __init__(self, path='.'):
-        self.repo = None
-        self.path = path
+        self.repo = Repo(path, odbt=db.GitDB)
         self.code_a = ''
         self.code_b = ''
 
@@ -49,14 +48,6 @@ class ChangedMethodsFinder:
         code = '\n'.join(code)
         code = re.sub(' +', ' ', code)
         return re.sub('\t+', '', code)
-
-    @staticmethod
-    def open_repo(self, path='.'):
-        try:
-            self.repo = Repo(path, odbt=db.GitDB)
-        except Exception:
-            print("Check path to repository. Maybe, you should write path in double quotes\"\"")
-            raise
 
 
     def code_fragment(self, bounds, code):
@@ -116,8 +107,7 @@ class ChangedMethodsFinder:
         return all_changed_methods
 
 
-    def find_changed_methods(self, path='.', commits=("HEAD", "HEAD~1")):
-        self.open_repo(path)
+    def find_changed_methods(self, commits=("HEAD", "HEAD~1")):
         diff_files = self.collect_modified_files_last_two_commits(commits)
         java_changed_methods = self.find_changed_methods_by_language('java', diff_files, commits)
         kotlin_changed_methods = self.find_changed_methods_by_language('kotlin', diff_files, commits)
