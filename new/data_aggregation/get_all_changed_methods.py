@@ -12,12 +12,12 @@ from new.constants import INTELLIJ_CHANGED_METHODS_FILE, INTELLIJ_COMMIT_INFO
 
 class ChangedMethodsCollector:
     def __init__(self, repo_path, data_dir):
-        self.cmf = ChangedMethodsFinder(repo_path)
+        self.cmf = ChangedMethodsFinder()
         self.repo_path = repo_path
         self.data_dir = data_dir
 
     def get_changed_methods_from_commits(self, next_commit):
-        changed_methods = self.cmf.find_changed_methods((next_commit + '~1', next_commit))
+        changed_methods = self.cmf.find_changed_methods(self.repo_path, (next_commit + '~1', next_commit))
         return changed_methods
 
     def get_commits_and_issues(self):
