@@ -1,9 +1,8 @@
-path_to_intellij=$1
-if [ -e ./data ]; then echo "data dir already exist"; else mkdir ./data; fi;
-cd ./data
-curr_path=$(pwd)
-touch $curr_path"/commit_fix_hashes.txt"
-truncate -s 0 $curr_path"/commit_fix_hashes.txt"
-cd ..
-cd ${path_to_intellij}
-git log --grep="(^|\s)EA-[\d]+" -P >> ${curr_path}'/commit_fix_hashes.txt'
+path_to_repo=$1
+data_dir=$2
+if [ -e "$data_dir" ]; then echo "data dir already exist"; else mkdir "$data_dir"; fi;
+if [ -e "$data_dir/commit_fix_hashes.txt" ]; then echo "commit info already exist"; else
+  touch "$data_dir/commit_fix_hashes.txt";
+  truncate -s 0 "$data_dir/commit_fix_hashes.txt";
+  git -C "$path_to_repo" log --grep="(^|\s)EA-[\d]+" -P -- "$path_to_repo" >> "$data_dir/commit_fix_hashes.txt";
+fi;
