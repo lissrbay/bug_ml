@@ -8,12 +8,12 @@ from pycode2seq.inference.model.model import Model as EmbModel
 
 from new.data.report import Frame
 from new.model.frame_encoders.frame_encoder import FrameEncoder
-from new.constants import CODE2SEQ_EMBEDDING_SIZE, CODE2SEQ_TMP_FILE
+from new.constants import EMBEDDING_DIM, EMBEDDING_TMP_FILE
 
 
 class Code2SeqFrameEncoder(FrameEncoder):
-    _tmp_file_name = CODE2SEQ_TMP_FILE
-    _emb_dim = CODE2SEQ_EMBEDDING_SIZE
+    _tmp_file_name = EMBEDDING_TMP_FILE
+    _emb_dim = EMBEDDING_DIM
 
     def __init__(self, name: str):
         self.emb_model = EmbModel.load(name)
