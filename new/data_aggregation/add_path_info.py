@@ -57,8 +57,11 @@ def add_paths_to_all_reports(from_repo: Repo, path_to_reports: str, path_to_repo
         report = Report.load_report(path_to_file)
         if report.id == 0:
             continue
-        commit = from_repo.commit(report.hash + '~1')
-        commit_files = list_files_in_commit(commit, from_repo)
+        try:
+            commit = from_repo.commit(report.hash + '~1')
+            commit_files = list_files_in_commit(commit, from_repo)
+        except Exception:
+            continue
 
         report = add_paths_to_one_report(report, commit_files, file_limit=file_limit)
         report.save_report(os.path.join(path_to_reports_save, file_name))

@@ -25,15 +25,7 @@ def get_file_by_commit(repo: Repo, commit: str, diff_file: str) -> str:
     return remove_unused_begin(code)
 
 
-def is_labeled_inside_window(report: Report, file_limit: int) -> int:
-    flag = 0
-    for frame in report.frames[:file_limit]:
-        if frame.meta['file_name'] and frame.meta['label']:
-            flag = 1
-    return flag
-
-
-def get_sources_for_report(repo: Repo, report: Report, commit: str, full_save_path: str, file_limit: int) -> Report:
+def get_sources_for_report(repo: Repo, report: Report, commit: str, file_limit: int) -> Report:
     frames_with_codes = []
     for frame in report.frames[:file_limit]:
         if frame.meta['path'] != '':
@@ -44,25 +36,20 @@ def get_sources_for_report(repo: Repo, report: Report, commit: str, full_save_pa
                 frame_code = hashed_code
                 frames_with_codes.append(Frame(frame_code, frame.meta))
             except Exception:
-                print(os.path.join(full_save_path, frame.meta['file_name']))
+                print(report.id, frame.meta['file_name'])
 
     return Report(report.id, report.exceptions, report.hash, frames_with_codes)
 
 
-def collect_sources_for_all_reports(repo: Repo, save_path: str, path_to_reports: str, file_limit=80):
+def collect_sources_for_all_reports(repo: Repo, path_to_reports: str, file_limit=80):
     reports_success = 0
-    for file_name in iterate_reports(path_to_reports, format='.json'):
+    for file_name in iterate_reports(path_to_reports):
         path_to_file = os.path.join(path_to_reports, file_name)
         report = Report.load_report(path_to_file)
         if report.hash == "":
             continue
 
-        full_save_path = os.path.join(save_path, str(report.id))
-        flag = is_labeled_inside_window(report, file_limit)
-        if not flag:
-            continue
-
-        report = get_sources_for_report(repo, report, report.hash, full_save_path, file_limit)
+        report = get_sources_for_report(repo, report, report.hash, file_limit)
         report.save_report(path_to_file)
         reports_success += 1
 
@@ -83,8 +70,7 @@ def collect_sources_for_reports(intellij_path: str, reports_path: str, files_lim
     repo = Repo(intellij_path, odbt=db.GitDB)
 
     path_to_reports = os.path.join(reports_path, REPORTS_SUBDIR)
-    save_path = os.path.join(reports_path, REPORTS_SUBDIR, 'sources')
-    collect_sources_for_all_reports(repo, save_path, path_to_reports, files_limit)
+    collect_sources_for_all_reports(repo, path_to_reports, files_limit)
 
 
 if __name__ == "__main__":
