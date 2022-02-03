@@ -72,7 +72,7 @@ def label_reports(issues_info: pd.DataFrame, path_to_reports: str, path_to_repor
         report = Report.load_from_base_report(path_to_file)
 
         fixed_methods = find_fixed_method_for_report(issues_info, report.id)
-        hash = ""
+        hash = report.hash
         if fixed_methods.shape[0] != 0:
             hash = get_hash(report.id, issues_info)
 
