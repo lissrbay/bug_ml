@@ -4,10 +4,10 @@ from collections import defaultdict
 
 from git import Repo, db
 
-from constants import REPORTS_SUBDIR
+from new.constants import REPORTS_SUBDIR
 from new.data_aggregation.utils import iterate_reports
 from new.data.report import Report, Frame
-from typing import List, Dict, Tuple
+from typing import List, Tuple
 
 
 def list_files_in_commit(commit: str, repo: Repo):
@@ -38,7 +38,7 @@ def find_file_for_frame(frame: Frame, matching_files: List[str]) -> str:
     return ""
 
 
-def add_paths_to_one_report(report: Report, commit_files:List[List[str]], file_limit: int) -> Report:
+def add_paths_to_one_report(report: Report, commit_files: List[List[str]], file_limit: int) -> Report:
     frames_with_paths = []
     for frame in report.frames[:file_limit]:
         matching_files_for_frame = commit_files[frame.meta['file_name']]

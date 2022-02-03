@@ -5,7 +5,7 @@ import base64
 
 from git import Repo, db
 
-from constants import REPORTS_SUBDIR
+from new.constants import REPORTS_SUBDIR
 from new.data_aggregation.utils import iterate_reports
 from new.data.report import Report, Frame
 

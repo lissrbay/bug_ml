@@ -1,4 +1,4 @@
-from constants import REPORTS_SUBDIR
+from new.constants import REPORTS_SUBDIR
 from git import Repo, db
 import os
 from new.data.report import Report, Frame

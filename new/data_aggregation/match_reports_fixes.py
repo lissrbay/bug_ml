@@ -6,13 +6,13 @@ import pandas as pd
 from new.data_aggregation.utils import iterate_reports
 from new.data.report import Report, Frame
 from typing import List
-from new.constants import INTELLIJ_CHANGED_METHODS_FILE, ISSUE_REPORTS_MAPPING_FILE, REPORTS_SUBDIR
+from new.constants import REPO_CHANGED_METHODS_FILE, ISSUE_REPORTS_MAPPING_FILE, REPORTS_SUBDIR
 
 
 def collect_info(path_to_reports: str, data_dir: str) -> pd.DataFrame:
     issues, method_names, path, hashes = [], [], [], []
 
-    with open(os.path.join(data_dir, INTELLIJ_CHANGED_METHODS_FILE), "r") as fixed_methods_io:
+    with open(os.path.join(data_dir, REPO_CHANGED_METHODS_FILE), "r") as fixed_methods_io:
         fixed_methods = json.load(fixed_methods_io)
 
         for issue, info in fixed_methods.items():
@@ -40,7 +40,7 @@ def frame_label(frame: Frame, fixed_methods: List[str], paths: List[str]) -> int
     return 0
 
 
-def label_frames(report: Report, hash:str, methods_info: pd.DataFrame) -> Report:
+def label_frames(report: Report, hash: str, methods_info: pd.DataFrame) -> Report:
     fixed_methods = methods_info.fixed_method.values
     paths = methods_info.path.apply(lambda x: x.split('/')[-1])
 
@@ -85,7 +85,7 @@ def label_reports(issues_info: pd.DataFrame, path_to_reports: str, path_to_repor
     print(f"Successed label data for {reports_success} reports.")
 
 
-def match_reports_to_labels(raw_reports_path: pd.DataFrame, data_dir:str = '../../data'):
+def match_reports_to_labels(raw_reports_path: str, data_dir: str = '../../data'):
     path_to_reports = os.path.join(raw_reports_path, "reports")
     path_to_reports_save = os.path.join(raw_reports_path, REPORTS_SUBDIR)
     issues_info = collect_info(raw_reports_path, data_dir)
