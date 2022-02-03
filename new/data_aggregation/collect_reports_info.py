@@ -23,9 +23,9 @@ def parse_args():
 if __name__ == "__main__":
     args = parse_args()
     collect_commits = ["sudo", "sh", "./collect_fix_commits.sh", args.repo_path]
-    #subprocess.Popen(collect_commits).communicate()
+    subprocess.Popen(collect_commits).communicate()
 
-    #get_all_changed_methods(args.repo_path, args.data_dir)
+    get_all_changed_methods(args.repo_path, args.data_dir)
     match_reports_to_labels(args.reports_path,  args.data_dir)
     add_paths_to_reports(args.repo_path, args.reports_path, args.files_limit)
     collect_sources_for_reports(args.repo_path, args.reports_path, args.files_limit)
