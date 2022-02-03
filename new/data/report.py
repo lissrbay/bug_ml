@@ -26,7 +26,8 @@ class Report:
         for frame in base_report['frames']:
             method_meta = {'method_name': frame['method_name'],
                            'file_name': frame['file_name'],
-                           'line': frame['line_number']}
+                           'line': frame['line_number'],
+                           'path': ''}
             if 'label' in frame:
                 method_meta['label'] = frame['label']
 
@@ -44,8 +45,11 @@ class Report:
             base_report = json.load(report_io)
         exceptions = base_report['class']
         _id = base_report['id']
+        hash = ""
+        if base_report['commit'] is not None:
+            hash = base_report['commit']['hash']
         frames = Report._read_frames_from_base(base_report)
-        report = Report(_id, exceptions, '', frames)
+        report = Report(_id, exceptions, hash, frames)
 
         return report
 
