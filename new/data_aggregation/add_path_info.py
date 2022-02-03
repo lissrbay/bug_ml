@@ -1,16 +1,16 @@
 import argparse
 import os
 from collections import defaultdict
+from typing import List, Tuple, Dict
 
-from git import Repo, db
+from git import Repo, db, Commit
 
 from new.constants import REPORTS_SUBDIR
-from new.data_aggregation.utils import iterate_reports
 from new.data.report import Report, Frame
-from typing import List, Tuple
+from new.data_aggregation.utils import iterate_reports
 
 
-def list_files_in_commit(commit: str, repo: Repo):
+def list_files_in_commit(commit: Commit, repo: Repo) -> Dict[str, List[str]]:
     configFiles = repo.git.execute(
         ['git', 'ls-tree', '-r', '--name-only', commit.hexsha]).split()
     java_files = defaultdict(list)
@@ -38,7 +38,7 @@ def find_file_for_frame(frame: Frame, matching_files: List[str]) -> str:
     return ""
 
 
-def add_paths_to_one_report(report: Report, commit_files: List[List[str]], file_limit: int) -> Report:
+def add_paths_to_one_report(report: Report, commit_files: Dict[str, List[str]], file_limit: int) -> Report:
     frames_with_paths = []
     for frame in report.frames[:file_limit]:
         matching_files_for_frame = commit_files[frame.meta['file_name']]
@@ -70,18 +70,8 @@ def add_paths_to_all_reports(from_repo: Repo, path_to_reports: str, path_to_repo
     print(f"Successed add paths for {reports_success} reports.")
 
 
-def parse_args():
-    parser = argparse.ArgumentParser()
-
-    parser.add_argument("--intellij_path", type=str)
-    parser.add_argument("--reports_path", type=str)
-    parser.add_argument("--files_limit", type=int, default=80)
-
-    return parser.parse_args()
-
-
-def add_paths_to_reports(intellij_path: str, reports_path: str, files_limit: int = 80):
-    repo = Repo(intellij_path, odbt=db.GitDB)
+def add_paths_to_reports(repo_path: str, reports_path: str, files_limit: int = 80):
+    repo = Repo(repo_path, odbt=db.GitDB)
 
     path_to_reports = os.path.join(reports_path, REPORTS_SUBDIR)
     path_to_reports_save = os.path.join(reports_path, REPORTS_SUBDIR)
@@ -90,9 +80,12 @@ def add_paths_to_reports(intellij_path: str, reports_path: str, files_limit: int
 
 
 if __name__ == "__main__":
-    args = parse_args()
+    parser = argparse.ArgumentParser()
 
-    intellij_path = args.intellij_path
-    reports_path = args.reports_path
-    files_limit = args.files_limit
-    add_paths_to_reports(intellij_path, reports_path, files_limit)
+    parser.add_argument("--repo_path", type=str)
+    parser.add_argument("--reports_path", type=str)
+    parser.add_argument("--files_limit", type=int, default=80)
+
+    args = parser.parse_args()
+
+    add_paths_to_reports(args.repo_path, args.reports_path, args.files_limit)

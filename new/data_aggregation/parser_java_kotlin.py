@@ -1,14 +1,13 @@
 import re
-from typing import List, Tuple
+from typing import List, Tuple, Optional
 
 
 class AST:
     # TODO: defaults
-    def __init__(self, label='', children=[], value=''):
+    def __init__(self, children: List['AST'] = None):
         self.label = None
-        self.children = children
-        self.value = value
-        self.bounds: Tuple[int, int] = ()
+        self.children = children or []
+        self.bounds: Optional[Tuple[int, int]] = None
         self.type = ''
 
     def __repr__(self):
