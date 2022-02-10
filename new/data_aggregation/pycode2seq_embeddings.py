@@ -6,11 +6,11 @@ from new.data.embs_dataset import EmbsDataset
 import torch
 from typing import Dict
 from new.data_aggregation.utils import iterate_reports
-from new.constants import CODE2SEQ_EMBEDDING_SIZE, CODE2SEQ_TMP_FILE, REPORTS_SUBDIR
+from new.constants import EMBEDDING_DIM, EMBEDDING_TMP_FILE, REPORTS_SUBDIR
 
 
 def zeros() -> torch.Tensor:
-    return torch.zeros(CODE2SEQ_EMBEDDING_SIZE)
+    return torch.zeros(EMBEDDING_DIM)
 
 
 def get_file_embeddings(model, filename: str) -> torch.Tensor:
@@ -27,7 +27,7 @@ def get_method_embedding(method_embeddings, method_name: str) -> torch.Tensor:
 
 
 def code_to_tmp(code: str):
-    with open(CODE2SEQ_TMP_FILE, 'w') as tmp_file:
+    with open(EMBEDDING_TMP_FILE, 'w') as tmp_file:
         tmp_file.write(code)
 
 
@@ -38,7 +38,7 @@ def embed_frame(model, frame: Frame, cashed_preds: Dict) -> torch.Tensor:
             method_embeddings = cashed_preds[input_filename]
         else:
             code_to_tmp(frame.get_code_decoded())
-            method_embeddings = get_file_embeddings(model, CODE2SEQ_TMP_FILE)
+            method_embeddings = get_file_embeddings(model, EMBEDDING_TMP_FILE)
             cashed_preds[input_filename] = method_embeddings
         embedding = get_method_embedding(method_embeddings, frame.meta['method_name'])
     else:
@@ -73,11 +73,10 @@ def get_reports_embeddings(raw_reports_path: str, save_dir: str, embs_name: str,
         embeddings.extend(report_embeddings)
 
     reports_count = len(report_ids)
-    embs_dataset = EmbsDataset(report_ids,  torch.cat(embeddings).reshape(reports_count,
-                                                                                 files_limit,
-                                                                                 CODE2SEQ_EMBEDDING_SIZE))
-    torch.save(embs_dataset,
-               os.path.join(save_dir, embs_name))
+    embs_dataset = EmbsDataset(report_ids, torch.cat(embeddings).reshape(reports_count,
+                                                                         files_limit,
+                                                                         EMBEDDING_DIM))
+    torch.save(embs_dataset, os.path.join(save_dir, embs_name))
 
 
 if __name__ == "__main__":
