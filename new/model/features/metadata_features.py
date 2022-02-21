@@ -1,13 +1,16 @@
 from typing import List
+import torch
+from torch.nn.functional import pad
+from torch import FloatTensor, Tensor
 
 from new.data.report import Report, Frame
-from new.model.features.feature import BaseFeature
+from new.model.report_encoders.report_encoder import ReportEncoder
 import numpy as np
 
 
-class MetadataFeaturesTransformer(BaseFeature):
+class MetadataFeaturesTransformer(ReportEncoder):
     def __init__(self, **kwargs):
-        super().__init__(**kwargs)
+        super().__init__()
         self.exception_class = []
         self.has_runs = []
         self.has_dollars = []
@@ -16,9 +19,7 @@ class MetadataFeaturesTransformer(BaseFeature):
         self.is_java_standart = []
         self.label = []
         self.method_stack_position = []
-
-    def fit(self, reports: List[Report], target: List[List[int]]) -> 'CodeFeatures':
-        pass
+        self.frames_count = kwargs['frames_count']
 
     def extract_method_name_features(self, method_name: str):
         self.has_runs.append("run" in method_name)
@@ -30,10 +31,22 @@ class MetadataFeaturesTransformer(BaseFeature):
         self.exception_class.append(report.exceptions)
 
     def extract_method_file_position(self, frame: Frame):
-        self.method_file_position.append(int(frame.meta['line_number']))
+        if 'line' in frame.meta:
+            self.method_file_position.append(0 if frame.meta['line'] is None else int(frame.meta['line']))
+        else:
+            raise Exception('No field line in frame.meta')
 
-    def transform(self, report: Report) -> List[List[float]]:
-        for i, frame in enumerate(report.frames):
+    def encode_report(self, report: Report) -> Tensor:
+        self.exception_class = []
+        self.has_runs = []
+        self.has_dollars = []
+        self.is_parallel = []
+        self.method_file_position = []
+        self.is_java_standart = []
+        self.label = []
+        self.method_stack_position = []
+
+        for i, frame in enumerate(report.frames[:self.frames_count]):
             method_name = frame.meta['method_name']
             self.extract_method_name_features(method_name)
 
@@ -42,15 +55,16 @@ class MetadataFeaturesTransformer(BaseFeature):
             self.extract_method_file_position(frame)
 
             self.method_stack_position.append(i)
-
-            self.label.append(frame.meta['label'])
-
-        return list(np.vstack(self.exception_class,
-                              self.has_runs,
+        pad_size = self.frames_count - min(len(report.frames), self.frames_count)
+        return pad(FloatTensor(np.vstack(#self.exception_class,
+                              [self.has_runs,
                               self.has_dollars,
                               self.is_parallel,
                               self.method_file_position,
-                              self.is_java_standart,
-                              self.label,
-                              self.method_stack_position,
-                              ))
+                              self.is_java_standart,]
+                              #self.method_stack_position,
+                              ).T), (0, 0, 0, pad_size))
+
+    @property
+    def dim(self) -> int:
+        return 5
