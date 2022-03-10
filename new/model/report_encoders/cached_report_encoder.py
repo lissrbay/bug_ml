@@ -9,7 +9,7 @@ from new.model.report_encoders.extended_embedding import ExtendedEmbedding
 
 
 class CachedReportEncoder(ReportEncoder):
-    def __init__(self, path_to_precomputed_embs: str, use_pad_embs: bool = False):
+    def __init__(self, path_to_precomputed_embs: str, use_pad_embs: bool = False, **kwargs):
         super().__init__()
         self.precomputed_embs = torch.load(path_to_precomputed_embs)
         self.word_emb = None
