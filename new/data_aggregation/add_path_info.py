@@ -5,7 +5,7 @@ from typing import List, Tuple, Dict
 
 from git import Repo, db, Commit
 
-from new.constants import REPORTS_SUBDIR
+from new.constants import REPORTS_INTERMEDIATE_DIR
 from new.data.report import Report, Frame
 from new.data_aggregation.utils import iterate_reports
 
@@ -50,7 +50,7 @@ def add_paths_to_one_report(report: Report, commit_files: Dict[str, List[str]], 
     return Report(report.id, report.exceptions, report.hash, frames_with_paths)
 
 
-def add_paths_to_all_reports(from_repo: Repo, path_to_reports: str, path_to_reports_save: str, file_limit=80):
+def add_paths_to_all_reports(from_repo: Repo, path_to_reports: str, path_to_reports_save: str, file_limit: int = 80):
     reports_success = 0
     for file_name in iterate_reports(path_to_reports):
         path_to_file = os.path.join(path_to_reports, file_name)
@@ -70,13 +70,13 @@ def add_paths_to_all_reports(from_repo: Repo, path_to_reports: str, path_to_repo
     print(f"Successed add paths for {reports_success} reports.")
 
 
-def add_paths_to_reports(repo_path: str, reports_path: str, files_limit: int = 80):
+def add_paths_to_reports(repo_path: str, data_dir: str, files_limit: int = 80):
     repo = Repo(repo_path, odbt=db.GitDB)
 
-    path_to_reports = os.path.join(reports_path, REPORTS_SUBDIR)
-    path_to_reports_save = os.path.join(reports_path, REPORTS_SUBDIR)
+    path_to_reports = os.path.join(data_dir, REPORTS_INTERMEDIATE_DIR)
+    reports_save_path = os.path.join(data_dir, REPORTS_INTERMEDIATE_DIR)
 
-    add_paths_to_all_reports(repo, path_to_reports, path_to_reports_save, files_limit)
+    add_paths_to_all_reports(repo, path_to_reports, reports_save_path, files_limit)
 
 
 if __name__ == "__main__":

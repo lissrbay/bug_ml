@@ -5,7 +5,7 @@ import base64
 
 from git import Repo, db
 
-from new.constants import REPORTS_SUBDIR
+from new.constants import REPORTS_INTERMEDIATE_DIR
 from new.data_aggregation.utils import iterate_reports
 from new.data.report import Report, Frame
 
@@ -59,23 +59,20 @@ def collect_sources_for_all_reports(repo: Repo, path_to_reports: str, file_limit
 def parse_args():
     parser = argparse.ArgumentParser()
 
-    parser.add_argument("--intellij_path", type=str)
-    parser.add_argument("--reports_path", type=str)
+    parser.add_argument("--repo_path", type=str)
+    parser.add_argument("--data_dir", type=str)
     parser.add_argument("--files_limit", type=int, default=80)
 
     return parser.parse_args()
 
 
-def collect_sources_for_reports(intellij_path: str, reports_path: str, files_limit: int):
-    repo = Repo(intellij_path, odbt=db.GitDB)
+def collect_sources_for_reports(repo_path: str, data_dir: str, files_limit: int):
+    repo = Repo(repo_path, odbt=db.GitDB)
 
-    path_to_reports = os.path.join(reports_path, REPORTS_SUBDIR)
+    path_to_reports = os.path.join(data_dir, REPORTS_INTERMEDIATE_DIR)
     collect_sources_for_all_reports(repo, path_to_reports, files_limit)
 
 
 if __name__ == "__main__":
     args = parse_args()
-    intellij_path = args.intellij_path
-    reports_path = args.reports_path
-    files_limit = args.files_limit
-    collect_sources_for_reports(intellij_path, reports_path, files_limit)
+    collect_sources_for_reports(args.repo_path, args.data_dir, args.files_limit)
