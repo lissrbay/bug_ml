@@ -1,8 +1,9 @@
-from typing import List, Dict
-import json
-import attr
-import pickle
 import base64
+import json
+import pickle
+from typing import List, Dict
+
+import attr
 
 
 @attr.s(frozen=True, auto_attribs=True)
@@ -12,6 +13,7 @@ class Frame:
 
     def get_code_decoded(self):
         return base64.b64decode(self.code).decode("UTF-8")
+
 
 @attr.s(frozen=True, auto_attribs=True)
 class Report:
@@ -57,8 +59,6 @@ class Report:
     def load_report(name: str):
         with open(name, 'rb') as report_io:
             return pickle.load(report_io)
-
-
 
     def save_report(self, name: str):
         with open(name, 'wb') as report_io:
