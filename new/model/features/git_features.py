@@ -15,7 +15,7 @@ class GitFeaturesTransformer(ReportEncoder):
         self.data = None
 
     def collect_to_df(self, reports: List[Report], target: List[List[int]]):
-        label, commit_time, modified_time_diff, authors, report_id, report_frame = [], [], [], [], [], []
+        label, commit_time, modified_time_diff, authors, report_frame = [], [], [], [], []
         for j, report in enumerate(reports):
             for i, frame in enumerate(report.frames):
                 commit_time.append(frame.meta['committed_date'] if 'commited_date' in frame.meta else 0)
@@ -23,13 +23,11 @@ class GitFeaturesTransformer(ReportEncoder):
                                             if 'commited_date' in frame.meta and 'authored_date' in frame.meta else 0)
                 authors.append(frame.meta['author'].email if 'author' in frame.meta else '')
 
-                report_id.append(report.id)
                 report_frame.append(i)
                 label.append(target[j][i])
         return pd.DataFrame({'commit_time': commit_time,
             'modified_time_diff': modified_time_diff,
             'author':authors,
-            #'report_id':self.report_id,
             'method_stack_position':report_frame,
             'label':label})
 
