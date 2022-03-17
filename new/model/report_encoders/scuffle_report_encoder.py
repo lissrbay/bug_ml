@@ -21,19 +21,20 @@ def clean_method_name(method_name):
     return method_name
 
 
-class ScaffleReportEncoder(ReportEncoder, nn.Module):
-    def __init__(self, hidden_dim: int, word2vec_dim: int, device: str = "cuda"):
+class ScuffleReportEncoder(ReportEncoder, nn.Module):
+    def __init__(self, hidden_dim: int, word2vec_dim: int, max_len: int, device: str = "cuda"):
         super().__init__()
         self.hidden_dim = hidden_dim
         self.word2vec_dim = word2vec_dim
         self.device = device
+        self.max_len = max_len
 
         self.word2vec = Word2Vec(vector_size=word2vec_dim, workers=11, min_count=20)
         self.lstm = nn.LSTM(self.word2vec_dim, self.hidden_dim, num_layers=2, bidirectional=True)
 
     def encode_report(self, report: Report) -> Tensor:
         encoded_tokens = []
-        for frame in report.frames:
+        for frame in report.frames[:self.max_len]:
             method_name_tokens = tokenize_frame(clean_method_name(frame.meta['method_name']))
             embeddings = []
             for word in method_name_tokens:
@@ -43,7 +44,8 @@ class ScaffleReportEncoder(ReportEncoder, nn.Module):
                     vector = np.zeros((self.word2vec_dim,))
                 vector = torch.tensor(vector, device=self.device, dtype=torch.float32)
                 embeddings.append(vector)
-
+            if not embeddings:
+                embeddings = [torch.zeros((self.word2vec_dim,), device=self.device, dtype=torch.float32)]
             encoded_tokens.append(torch.vstack(embeddings))
 
         lengths = [enc.shape[0] for enc in encoded_tokens]
@@ -55,7 +57,7 @@ class ScaffleReportEncoder(ReportEncoder, nn.Module):
 
     def fit(self, reports: List[Report], target: List[List[int]]) -> 'ReportEncoder':
         sentences = [list(tokenize_frame(clean_method_name(frame.meta['method_name'])))
-                     for report in reports for frame in report.frames]
+                     for report in reports for frame in report.frames[:self.max_len]]
         self.word2vec.build_vocab(sentences, progress_per=1000)
         self.word2vec.train(sentences, total_examples=len(sentences), epochs=30, report_delay=1)
         return self

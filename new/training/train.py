@@ -1,14 +1,21 @@
 import argparse
 import json
+import os
 from json import JSONDecodeError
 from pathlib import Path
-from typing import List, Tuple, Optional
+from typing import List, Tuple, Optional, cast
 
+import torch
+from code2seq.model import Code2Seq
+from omegaconf import DictConfig, OmegaConf
+
+from new.data.labeled_path_context_storage import LabeledPathContextStorage
 from new.data.report import Report
-# from new.model.frame_encoders.code2seq import Code2SeqFrameEncoder
+from new.data_aggregation.utils import iterate_reports
 from new.model.lstm_tagger import LstmTagger
-from new.model.report_encoders.cached_report_encoder import CachedReportEncoder
-from new.model.report_encoders.scaffle_report_encoder import ScaffleReportEncoder
+from new.model.report_encoders.code2seq_report_encoder import Code2SeqReportEncoder
+from new.model.report_encoders.combined_report_encoder import CombinedReportEncoder
+from new.model.report_encoders.scuffle_report_encoder import ScuffleReportEncoder
 from new.model.report_encoders.tfidf import TfIdfReportEncoder
 from new.training.torch_training import train_lstm_tagger
 
@@ -30,14 +37,33 @@ def read_reports(reports_path: str) -> Tuple[List[Report], List[List[int]]]:
     return reports, targets
 
 
+def make_target(reports: List[Report]) -> List[List[int]]:
+    targets = []
+    for report in reports:
+        target = [frame.meta["label"] for frame in report.frames]
+        targets.append(target)
+    return targets
+
+
 def train(reports_path: str, save_path: str, model_name: Optional[str]):
-    reports, target = read_reports(reports_path)
+    reports = []
+    for file_name in iterate_reports(reports_path):
+        report_path = os.path.join(reports_path, file_name)
+        report = Report.load_report(report_path)
+        if report.frames:
+            if sum(frame.meta["label"] for frame in report.frames) > 1:
+                reports.append(report)
+
+    reports = reports
+
+    target = make_target(reports)
+
     with open("config.json", "r") as f:
         config = json.load(f)
 
     if model_name:
         if model_name == "scuffle":
-            encoder = ScaffleReportEncoder(**config["models"]["scuffle"]["encoder"]).fit(reports, target)
+            encoder = ScuffleReportEncoder(**config["models"]["scuffle"]["encoder"]).fit(reports, target)
             tagger = LstmTagger(
                 encoder,
                 max_len=config["training"]["max_len"],
@@ -51,14 +77,30 @@ def train(reports_path: str, save_path: str, model_name: Optional[str]):
                 **config["models"]["deep_analyze"]["tagger"]
             )
         else:
-            raise ValueError("Wrong model type. Should be scaffle or deep_analyze")
+            raise ValueError("Wrong model type. Should be scuffle or deep_analyze")
     else:
-        encoder = CachedReportEncoder("/home/dumtrii/Downloads/code2seq_embs")
+        # encoder = CachedReportEncoder("/home/dumtrii/Downloads/code2seq_embs")
+        config_path = config["code2seq_config_path"]
+        cli_path = config["astminer_config_path"]
+        ast_config_path = config["astminer_config_path"]
+
+        __config = cast(DictConfig, OmegaConf.load(config_path))
+
+        code2seq = Code2Seq.load_from_checkpoint(__config.checkpoint, map_location=torch.device("cpu"))
+
+        storage = LabeledPathContextStorage(cli_path, ast_config_path, code2seq.vocabulary, __config)
+
+        storage.load_data(reports, mine_files=False, process_mined=False, remove_all=False)
+
+        encoder1 = Code2SeqReportEncoder(code2seq, storage)
+        encoder2 = ScuffleReportEncoder(**config["models"]["scuffle"]["encoder"]).fit(reports, target)
+        encoder = CombinedReportEncoder(encoder1, encoder2)
+
         tagger = LstmTagger(
             encoder,
             max_len=config["training"]["max_len"],
             layers_num=2,
-            hidden_dim=250
+            hidden_dim=200
         )
 
     tagger = train_lstm_tagger(tagger, reports, target, **config["training"])
@@ -73,7 +115,7 @@ def main():
     parser.add_argument("--model", type=str, default=None)
     args = parser.parse_args()
 
-    train(args.reports_path, args.save_path, "scuffle")
+    train(args.reports_path, args.save_path, None)
 
 
 if __name__ == '__main__':

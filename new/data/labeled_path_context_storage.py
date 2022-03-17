@@ -201,6 +201,9 @@ class LabeledPathContextStorage:
         return contexts[method_name]
 
     def load_data(self, reports: List[Report], mine_files=True, process_mined=True, remove_all=True):
+        # Run with remove_all=False and after that use mine_files=False, process_mined=True
+        # to reuse mined data
+
         self.output_path.mkdir(parents=True, exist_ok=True)
         self.src_path.mkdir(parents=True, exist_ok=True)
         self.contexts_path.mkdir(parents=True, exist_ok=True)

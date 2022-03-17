@@ -26,5 +26,8 @@
   "training": {
     "max_len": 80,
   "batch_size": 8
-  }
+  },
+  "code2seq_config_path": "/home/dumtrii/Documents/practos/spring2/code2seq/config/code2seq-java-small.yaml",
+  "astminer_cli_path": "/home/dumtrii/Documents/practos/spring2/astminer/cli.sh",
+  "astminer_config_path": "/home/dumtrii/Documents/practos/spring2/astminer/configs/bug_ml.yaml"
 }
