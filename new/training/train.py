@@ -77,8 +77,8 @@ def train(reports_path: str, save_path: str, model_name: Optional[str]):
         tagger = LstmTagger(
             encoder,
             max_len=config["training"]["max_len"],
-            layers_num=1,
-            hidden_dim=120
+            layers_num=2,
+            hidden_dim=250
         )
 
     tagger = train_lstm_tagger(tagger, reports, target, **config["training"])
