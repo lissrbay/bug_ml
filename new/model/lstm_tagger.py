@@ -54,7 +54,6 @@ class LstmTagger(BlamedTagger, nn.Module):
         features = self.report_encoder.encode_report(report).to(self.device)
         features = features[:self.max_len]
         features = pad(features, (0, 0, 0, self.max_len - features.shape[0])).unsqueeze(1)
-
         embeddings = features * mask.unsqueeze(-1)
         res, _ = self.lstm(embeddings)
 

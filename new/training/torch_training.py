@@ -49,7 +49,6 @@ class TrainingModule(pl.LightningModule):
     def validation_step(self, batch, *args):
         reports, target, masks = batch
         mask = torch.cat(masks, dim=1)
-
         if self.tagger.with_crf:
             emissions = torch.cat([self.tagger.calc_emissions(report, mask) for report, mask in zip(reports, masks)],
                                   dim=1)

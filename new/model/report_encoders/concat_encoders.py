@@ -10,6 +10,7 @@ class ConcatReportEncoders(ReportEncoder):
     def __init__(self, report_encoders: List[ReportEncoder], **kwargs):
         assert len(report_encoders) > 0
         self.report_encoders = report_encoders
+        self.device = kwargs['device'] if 'device' in kwargs else 'cpu'
 
     def fit(self, reports: List[Report], target: List[List[int]]):
         for name, feature in self.features.items():
@@ -18,7 +19,7 @@ class ConcatReportEncoders(ReportEncoder):
     def encode_report(self, report: Report) -> Tensor:
         feature_value = []
         for encoder in self.report_encoders:
-            feature_value += [encoder.encode_report(report)]
+            feature_value += [encoder.encode_report(report).to(self.device)]
 
         return torch.cat(feature_value, dim=1)
 

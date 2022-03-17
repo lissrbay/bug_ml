@@ -7,4 +7,4 @@ def iterate_reports(path_to_reports: str, ext=""):
         for file in tqdm(files):
             if os.path.splitext(file)[1] != ext:
                 continue
-            yield file
+            yield os.path.join(root, file)

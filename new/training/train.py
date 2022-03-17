@@ -1,5 +1,8 @@
 import argparse
 import json
+import sys
+sys.path.insert(0, './../../')
+
 from tqdm import tqdm
 from typing import List, Tuple, Optional
 from new.data.report import Report, Frame
@@ -35,7 +38,7 @@ def read_reports(reports_path: str) -> Tuple[List[Report], List[List[int]]]:
     # reports_path = Path(reports_path)
     pool = Pool()
 
-    for report, target in pool.imap(read_report, tqdm(list(iterate_reports(reports_path))[:100])):
+    for report, target in pool.imap(read_report, tqdm(list(iterate_reports(reports_path)))):
         if sum(target) > 0:
             reports.append(report)
             targets.append(target)
@@ -65,12 +68,12 @@ def train(reports_path: str, save_path: str, model_name: Optional[str]):
         else:
             raise ValueError("Wrong model type. Should be scaffle or deep_analyze")
     else:
-        encoder = ConcatReportEncoders([RobertaReportEncoder(frames_count=config["training"]["max_len"]),
+        encoder = ConcatReportEncoders([RobertaReportEncoder(frames_count=config["training"]["max_len"], device='cuda'),
                                        #path_to_precomputed_embs="/home/lissrbay/Загрузки/code2seq_embs"),
-                                       GitFeaturesTransformer(
-                                           frames_count=config["training"]["max_len"]).fit(reports, target),
-                                       MetadataFeaturesTransformer(frames_count=config["training"]["max_len"])
-            ])
+                                       #GitFeaturesTransformer(
+                                       #    frames_count=config["training"]["max_len"]).fit(reports, target),
+                                       #MetadataFeaturesTransformer(frames_count=config["training"]["max_len"])
+            ], device='cuda')
         tagger = LstmTagger(
             encoder,
             max_len=config["training"]["max_len"],
