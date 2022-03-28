@@ -17,8 +17,8 @@ class TrainingModule(pl.LightningModule):
         super().__init__()
         self.tagger = tagger
 
-        self.train_metrics = MetricCollection([Precision(), Recall(), TopkAccuracy(3)])
-        self.val_metrics = MetricCollection([Precision(), Recall(), TopkAccuracy(3)])
+        self.train_metrics = MetricCollection([Precision(), Recall(), TopkAccuracy(1)])
+        self.val_metrics = MetricCollection([Precision(), Recall(), TopkAccuracy(1)])
 
         self.softmax = torch.nn.Softmax(dim=-1)
         self.celoss = torch.nn.CrossEntropyLoss()
@@ -49,7 +49,6 @@ class TrainingModule(pl.LightningModule):
     def validation_step(self, batch, *args):
         reports, target, masks = batch
         mask = torch.cat(masks, dim=1)
-
         if self.tagger.with_crf:
             emissions = torch.cat([self.tagger.calc_emissions(report, mask) for report, mask in zip(reports, masks)],
                                   dim=1)
@@ -70,6 +69,7 @@ class TrainingModule(pl.LightningModule):
     def validation_epoch_end(self, outputs: List[Any]) -> None:
         super().validation_epoch_end(outputs)
         self.log("val_metrics", self.val_metrics.compute())
+        print(self.val_metrics.compute())
         self.val_metrics.reset()
 
     def training_epoch_end(self, outputs: List[Any]) -> None:
@@ -85,7 +85,6 @@ def train_lstm_tagger(tagger: LstmTagger, reports: List[Report], target: List[Li
                       max_len: int) -> LstmTagger:
     datamodule = ReportsDataModule(reports, target, batch_size, max_len)
     model = TrainingModule(tagger)
-
     trainer = Trainer(gpus=1)
     trainer.fit(model, datamodule)
 
