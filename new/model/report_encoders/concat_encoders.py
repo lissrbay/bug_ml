@@ -5,12 +5,14 @@ from torch import Tensor
 
 from new.data.report import Report
 from new.model.report_encoders.report_encoder import ReportEncoder
+from new.data_aggregation.utils import pad_features
 
 class ConcatReportEncoders(ReportEncoder):
     def __init__(self, report_encoders: List[ReportEncoder], **kwargs):
         assert len(report_encoders) > 0
         self.report_encoders = report_encoders
         self.device = kwargs['device'] if 'device' in kwargs else 'cpu'
+        self.frames_count = kwargs['frames_count']
 
     def fit(self, reports: List[Report], target: List[List[int]]):
         for name, feature in self.features.items():
@@ -19,7 +21,7 @@ class ConcatReportEncoders(ReportEncoder):
     def encode_report(self, report: Report) -> Tensor:
         feature_value = []
         for encoder in self.report_encoders:
-            feature_value += [encoder.encode_report(report).to(self.device)]
+            feature_value += [pad_features(encoder.encode_report(report).to(self.device))]
 
         return torch.cat(feature_value, dim=1)
 
