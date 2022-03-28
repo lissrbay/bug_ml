@@ -45,4 +45,4 @@
 * code2seq==0.0.2
 * pycode2seq==0.0.4
 
-
+Also, you need install Unix utility `truncate`
