@@ -11,12 +11,11 @@ from new.model.report_encoders.report_encoder import ReportEncoder
 
 class Code2SeqReportEncoder(ReportEncoder, nn.Module):
 
-    def __init__(self, model: Code2Seq, context_storage: LabeledPathContextStorage, frames_limit: int = 80,
+    def __init__(self, model: Code2Seq, context_storage: LabeledPathContextStorage,
                  batch_size: int = 32, padding_idx: int = 2):
         super().__init__()
         self.model = model
         self.context_storage = context_storage
-        self.frames_limit = frames_limit
 
         self.model.train()
         self.batch_size = batch_size
@@ -27,13 +26,13 @@ class Code2SeqReportEncoder(ReportEncoder, nn.Module):
         path_contexts = []
         context_indexes = []
 
-        for index, frame in enumerate(report.frames[:self.frames_limit]):
+        for index, frame in enumerate(report.frames):
             contexts = self.context_storage.get_frame_contexts(frame)
             if contexts is not None:
                 path_contexts.append(contexts)
                 context_indexes.append(index)
 
-        final_embeddings = torch.zeros((len(report.frames[:self.frames_limit]), self.dim), device=self.model.device)
+        final_embeddings = torch.zeros((len(report.frames), self.dim), device=self.model.device)
 
         if path_contexts:
             for i in range(0, len(path_contexts), self.batch_size):
