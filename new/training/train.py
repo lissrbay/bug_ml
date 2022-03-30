@@ -60,6 +60,8 @@ def train(reports_path: str, save_path: str, model_name: Optional[str]):
     with open("config.json", "r") as f:
         config = json.load(f)
 
+    model_names = ["scuffle", "deep_analyze", "code2seq"]
+
     if model_name:
         if model_name == "scuffle":
             encoder = ScuffleReportEncoder(**config["models"]["scuffle"]["encoder"]).fit(reports, target)
@@ -75,8 +77,31 @@ def train(reports_path: str, save_path: str, model_name: Optional[str]):
                 max_len=config["training"]["max_len"],
                 **config["models"]["deep_analyze"]["tagger"]
             )
+        elif model_name == "code2seq":
+            config_path = config["code2seq_config_path"]
+            cli_path = config["astminer_config_path"]
+            ast_config_path = config["astminer_config_path"]
+
+            __config = cast(DictConfig, OmegaConf.load(config_path))
+
+            code2seq = Code2Seq.load_from_checkpoint(__config.checkpoint, map_location=torch.device("cpu"))
+
+            storage = LabeledPathContextStorage(cli_path, ast_config_path, code2seq.vocabulary, __config,
+                                                **config["code2seq_storage"])
+
+            storage.load_data(reports, mine_files=False, process_mined=False, remove_all=False)
+
+            encoder = Code2SeqReportEncoder(code2seq, storage)
+
+            tagger = LstmTagger(
+                encoder,
+                max_len=config["training"]["max_len"],
+                layers_num=2,
+                hidden_dim=200
+            )
+
         else:
-            raise ValueError("Wrong model type. Should be scuffle or deep_analyze")
+            raise ValueError(f"Wrong model type. Should be in {model_names}")
     else:
         # encoder = CachedReportEncoder("/home/dumtrii/Downloads/code2seq_embs")
         config_path = config["code2seq_config_path"]
@@ -87,7 +112,8 @@ def train(reports_path: str, save_path: str, model_name: Optional[str]):
 
         code2seq = Code2Seq.load_from_checkpoint(__config.checkpoint, map_location=torch.device("cpu"))
 
-        storage = LabeledPathContextStorage(cli_path, ast_config_path, code2seq.vocabulary, __config, **config["code2seq_storage"])
+        storage = LabeledPathContextStorage(cli_path, ast_config_path, code2seq.vocabulary, __config,
+                                            **config["code2seq_storage"])
 
         storage.load_data(reports, mine_files=False, process_mined=False, remove_all=False)
 
