@@ -14,7 +14,6 @@ from new.data.report import Report
 from new.data_aggregation.utils import iterate_reports
 from new.model.lstm_tagger import LstmTagger
 from new.model.report_encoders.code2seq_report_encoder import Code2SeqReportEncoder
-from new.model.report_encoders.combined_report_encoder import CombinedReportEncoder
 from new.model.report_encoders.scuffle_report_encoder import ScuffleReportEncoder
 from new.model.report_encoders.tfidf import TfIdfReportEncoder
 from new.training.torch_training import train_lstm_tagger
@@ -88,13 +87,11 @@ def train(reports_path: str, save_path: str, model_name: Optional[str]):
 
         code2seq = Code2Seq.load_from_checkpoint(__config.checkpoint, map_location=torch.device("cpu"))
 
-        storage = LabeledPathContextStorage(cli_path, ast_config_path, code2seq.vocabulary, __config)
+        storage = LabeledPathContextStorage(cli_path, ast_config_path, code2seq.vocabulary, __config, **config["code2seq_storage"])
 
         storage.load_data(reports, mine_files=False, process_mined=False, remove_all=False)
 
-        encoder1 = Code2SeqReportEncoder(code2seq, storage)
-        encoder2 = ScuffleReportEncoder(**config["models"]["scuffle"]["encoder"]).fit(reports, target)
-        encoder = CombinedReportEncoder(encoder1, encoder2)
+        encoder = Code2SeqReportEncoder(code2seq, storage)
 
         tagger = LstmTagger(
             encoder,

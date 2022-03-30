@@ -1,4 +1,3 @@
-import shutil
 import pickle
 import shutil
 import subprocess
@@ -19,11 +18,10 @@ from yaml import load, dump
 from new.data.report import Frame, Report
 from new.model.report_encoders.utils import split_into_subtokens
 
-CACHE_SIZE = 3500
-
 
 class LabeledPathContextStorage:
-    def __init__(self, cli_path: str, config_path: str, vocabulary: Vocabulary, config: DictConfig):
+    def __init__(self, cli_path: str, config_path: str, vocabulary: Vocabulary, config: DictConfig,
+                 cache_size: int = 3500, dump_every: int = 50000):
         self.cli_path = cli_path
         self.config_path = config_path
         self.vocabulary = vocabulary
@@ -32,7 +30,7 @@ class LabeledPathContextStorage:
         self.code_to_filename = {}
         self.mined_contexts = {}
 
-        self.work_dir = Path("/home/dumtrii/Documents/practos/spring2/bug_ml/tmp/storage")
+        self.work_dir = Path("tmp/storage")
         self.src_path = self.work_dir / "src"
         self.output_path = self.work_dir / "output"
         self.contexts_path = self.work_dir / "contexts"
@@ -43,6 +41,11 @@ class LabeledPathContextStorage:
         self.path_length = self.config.data.path_length
         self.max_context = self.config.data.max_context
         self.max_label_parts = self.config.data.max_label_parts
+
+        self.cache_size = cache_size
+        self.dump_every = dump_every
+
+        self.get_contexts = lru_cache(maxsize=self.cache_size)(self.get_contexts)
 
     def _add_line(self, line: str):
         filename, raw_label, *raw_contexts = line.split()
@@ -78,14 +81,12 @@ class LabeledPathContextStorage:
     def process_mined_paths(self):
         num_lines = sum(1 for _ in open(self.path_file_path))
 
-        dump_every = 50000
-
         self.mined_contexts = {}
         with open(self.path_file_path, "r") as f:
             for i, line in tqdm(enumerate(f), total=num_lines):
                 self._add_line(line)
 
-                if (i + 1) % dump_every == 0:
+                if (i + 1) % self.dump_every == 0:
                     self.dump_contexts()
             self.dump_contexts()
 
@@ -171,7 +172,6 @@ class LabeledPathContextStorage:
                                                        self.max_token_parts),
         )
 
-    @lru_cache(maxsize=CACHE_SIZE)
     def get_contexts(self, filename: str) -> Optional[Dict[str, LabeledPathContext]]:
         file_path = self.contexts_path / filename
 

@@ -11,7 +11,8 @@ from new.model.report_encoders.report_encoder import ReportEncoder
 
 class Code2SeqReportEncoder(ReportEncoder, nn.Module):
 
-    def __init__(self, model: Code2Seq, context_storage: LabeledPathContextStorage, frames_limit=80, batch_size=32, padding_idx=2):
+    def __init__(self, model: Code2Seq, context_storage: LabeledPathContextStorage, frames_limit: int = 80,
+                 batch_size: int = 32, padding_idx: int = 2):
         super().__init__()
         self.model = model
         self.context_storage = context_storage
@@ -36,7 +37,8 @@ class Code2SeqReportEncoder(ReportEncoder, nn.Module):
 
         if path_contexts:
             for i in range(0, len(path_contexts), self.batch_size):
-                contexts_chunk, indexes_chunk = path_contexts[i:i+self.batch_size], context_indexes[i:i+self.batch_size]
+                contexts_chunk, indexes_chunk = path_contexts[i:i + self.batch_size], context_indexes[
+                                                                                      i:i + self.batch_size]
 
                 batch = BatchedLabeledPathContext(contexts_chunk)
                 batch.move_to_device(self.model.device)
