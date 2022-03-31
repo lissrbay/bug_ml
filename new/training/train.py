@@ -1,3 +1,6 @@
+import sys
+sys.path.insert(0, './../../')
+
 import argparse
 import json
 import os
@@ -10,29 +13,45 @@ from code2seq.model import Code2Seq
 from omegaconf import DictConfig, OmegaConf
 
 from new.data.labeled_path_context_storage import LabeledPathContextStorage
-from new.data.report import Report
+
+from tqdm import tqdm
+from new.data.report import Report, Frame
+# from new.model.frame_encoders.code2seq import Code2SeqFrameEncoder
 from new.data_aggregation.utils import iterate_reports
+from new.model.features.git_features import GitFeaturesTransformer
+from new.model.features.metadata_features import MetadataFeaturesTransformer
+from new.model.report_encoders.codebert_encoder import RobertaReportEncoder
+from new.model.report_encoders.concat_encoders import ConcatReportEncoders
 from new.model.lstm_tagger import LstmTagger
 from new.model.report_encoders.code2seq_report_encoder import Code2SeqReportEncoder
 from new.model.report_encoders.scuffle_report_encoder import ScuffleReportEncoder
 from new.model.report_encoders.tfidf import TfIdfReportEncoder
 from new.training.torch_training import train_lstm_tagger
+from multiprocessing import Pool
+
+import logging
+
+loger = logging.getLogger('lightning')
+loger.info(...)
+loger.debug(...)
+
+
+def read_report(report_path: str) -> Tuple[Report, List[int]]:
+    report = Report.load_report(report_path)
+    target = [frame.meta["label"] for frame in report.frames]
+
+    return report, target
 
 
 def read_reports(reports_path: str) -> Tuple[List[Report], List[List[int]]]:
     reports, targets = [], []
-    reports_path = Path(reports_path)
-    for report_file in reports_path.glob("*.json"):
-        try:
-            report = Report.load_from_base_report(report_file)
-            if report.frames:
-                target = [frame.meta["label"] for frame in report.frames]
-                if sum(target) > 0:
-                    reports.append(report)
-                    targets.append(target)
-        except JSONDecodeError:
-            print(f"Reading report {report_file} failed")
-            continue
+    # reports_path = Path(reports_path)
+    pool = Pool()
+
+    for report, target in pool.imap(read_report, tqdm(list(iterate_reports(reports_path)))):
+        if sum(target) > 0:
+            reports.append(report)
+            targets.append(target)
     return reports, targets
 
 
@@ -61,8 +80,8 @@ def train(reports_path: str, save_path: str, model_name: Optional[str]):
         config = json.load(f)
 
     model_names = ["scuffle", "deep_analyze", "code2seq"]
-
-    if model_name:
+  
+    if model_name is not None:
         if model_name == "scuffle":
             encoder = ScuffleReportEncoder(**config["models"]["scuffle"]["encoder"]).fit(reports, target)
             tagger = LstmTagger(
@@ -103,22 +122,13 @@ def train(reports_path: str, save_path: str, model_name: Optional[str]):
         else:
             raise ValueError(f"Wrong model type. Should be in {model_names}")
     else:
-        # encoder = CachedReportEncoder("/home/dumtrii/Downloads/code2seq_embs")
-        config_path = config["code2seq_config_path"]
-        cli_path = config["astminer_config_path"]
-        ast_config_path = config["astminer_config_path"]
-
-        __config = cast(DictConfig, OmegaConf.load(config_path))
-
-        code2seq = Code2Seq.load_from_checkpoint(__config.checkpoint, map_location=torch.device("cpu"))
-
-        storage = LabeledPathContextStorage(cli_path, ast_config_path, code2seq.vocabulary, __config,
-                                            **config["code2seq_storage"])
-
-        storage.load_data(reports, mine_files=False, process_mined=False, remove_all=False)
-
-        encoder = Code2SeqReportEncoder(code2seq, storage)
-
+      
+        encoder = ConcatReportEncoders([RobertaReportEncoder(frames_count=config["training"]["max_len"], device='cuda'),
+                                       #path_to_precomputed_embs="/home/lissrbay/Загрузки/code2seq_embs"),
+                                       #GitFeaturesTransformer(
+                                       #    frames_count=config["training"]["max_len"]).fit(reports, target),
+                                       #MetadataFeaturesTransformer(frames_count=config["training"]["max_len"])
+            ], device='cuda')
         tagger = LstmTagger(
             encoder,
             max_len=config["training"]["max_len"],
