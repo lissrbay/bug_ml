@@ -1,35 +1,28 @@
-import sys
-sys.path.insert(0, './../../')
-
 import argparse
 import json
+import logging
 import os
-from json import JSONDecodeError
-from pathlib import Path
+import sys
+from multiprocessing import Pool
 from typing import List, Tuple, Optional, cast
 
 import torch
 from code2seq.model import Code2Seq
 from omegaconf import DictConfig, OmegaConf
+from tqdm import tqdm
 
 from new.data.labeled_path_context_storage import LabeledPathContextStorage
-
-from tqdm import tqdm
-from new.data.report import Report, Frame
-# from new.model.frame_encoders.code2seq import Code2SeqFrameEncoder
+from new.data.report import Report
 from new.data_aggregation.utils import iterate_reports
-from new.model.features.git_features import GitFeaturesTransformer
-from new.model.features.metadata_features import MetadataFeaturesTransformer
-from new.model.report_encoders.codebert_encoder import RobertaReportEncoder
-from new.model.report_encoders.concat_encoders import ConcatReportEncoders
 from new.model.lstm_tagger import LstmTagger
 from new.model.report_encoders.code2seq_report_encoder import Code2SeqReportEncoder
+from new.model.report_encoders.codebert_encoder import RobertaReportEncoder
+from new.model.report_encoders.concat_encoders import ConcatReportEncoders
 from new.model.report_encoders.scuffle_report_encoder import ScuffleReportEncoder
 from new.model.report_encoders.tfidf import TfIdfReportEncoder
 from new.training.torch_training import train_lstm_tagger
-from multiprocessing import Pool
 
-import logging
+sys.path.insert(0, './../../')
 
 loger = logging.getLogger('lightning')
 loger.info(...)
@@ -80,7 +73,7 @@ def train(reports_path: str, save_path: str, model_name: Optional[str]):
         config = json.load(f)
 
     model_names = ["scuffle", "deep_analyze", "code2seq"]
-  
+
     if model_name is not None:
         if model_name == "scuffle":
             encoder = ScuffleReportEncoder(**config["models"]["scuffle"]["encoder"]).fit(reports, target)
@@ -122,13 +115,13 @@ def train(reports_path: str, save_path: str, model_name: Optional[str]):
         else:
             raise ValueError(f"Wrong model type. Should be in {model_names}")
     else:
-      
+
         encoder = ConcatReportEncoders([RobertaReportEncoder(frames_count=config["training"]["max_len"], device='cuda'),
-                                       #path_to_precomputed_embs="/home/lissrbay/Загрузки/code2seq_embs"),
-                                       #GitFeaturesTransformer(
-                                       #    frames_count=config["training"]["max_len"]).fit(reports, target),
-                                       #MetadataFeaturesTransformer(frames_count=config["training"]["max_len"])
-            ], device='cuda')
+                                        # path_to_precomputed_embs="/home/lissrbay/Загрузки/code2seq_embs"),
+                                        # GitFeaturesTransformer(
+                                        #    frames_count=config["training"]["max_len"]).fit(reports, target),
+                                        # MetadataFeaturesTransformer(frames_count=config["training"]["max_len"])
+                                        ], device='cuda')
         tagger = LstmTagger(
             encoder,
             max_len=config["training"]["max_len"],
