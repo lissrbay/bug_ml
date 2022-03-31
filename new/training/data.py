@@ -56,7 +56,7 @@ class ReportsDataset(Dataset):
 
         length = len(report.frames)
 
-        target = pad(target, (0, self.max_len - length)).unsqueeze(1)
+        target = pad(target, (0, self.max_len - length), value=2).unsqueeze(1)
 
         mask = (torch.arange(self.max_len) < length).unsqueeze(1)
         mask = mask * (target != 2)

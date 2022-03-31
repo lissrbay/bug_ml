@@ -11,6 +11,7 @@ from new.model.lstm_tagger import LstmTagger
 from new.training.data import ReportsDataModule
 from new.training.metrics import Precision, Recall, TopkAccuracy
 
+from commode_utils.losses import SequenceCrossEntropyLoss
 
 class TrainingModule(pl.LightningModule):
     def __init__(self, tagger: LstmTagger):
@@ -21,7 +22,7 @@ class TrainingModule(pl.LightningModule):
         self.val_metrics = MetricCollection([Precision(), Recall(), TopkAccuracy(1)])
 
         self.softmax = torch.nn.Softmax(dim=-1)
-        self.celoss = torch.nn.CrossEntropyLoss()
+        self.celoss = SequenceCrossEntropyLoss(reduction="batch-mean", pad_idx=2)
 
     def training_step(self, batch, batch_idx):
         reports, target, masks = batch
@@ -33,7 +34,7 @@ class TrainingModule(pl.LightningModule):
             loss = -self.tagger.crf(emissions, target, mask)
         else:
             scores = self.tagger.forward(reports, masks)
-            loss = self.celoss(scores.permute(1, 2, 0), target.T)
+            loss = self.celoss(scores, target)
 
         with torch.no_grad():
             scores = self.tagger.forward(reports, masks)
@@ -55,7 +56,7 @@ class TrainingModule(pl.LightningModule):
             loss = -self.tagger.crf(emissions, target, mask)
         else:
             scores = self.tagger.forward(reports, masks)
-            loss = self.celoss(scores.permute(1, 2, 0), target.T)
+            loss = self.celoss(scores, target)
 
         with torch.no_grad():
             scores = self.tagger.forward(reports, masks)
@@ -78,7 +79,7 @@ class TrainingModule(pl.LightningModule):
         self.train_metrics.reset()
 
     def configure_optimizers(self):
-        return Adam(self.parameters(), lr=1e-3)
+        return Adam(self.parameters(), lr=1e-4, weight_decay=1e-5)
 
 
 def train_lstm_tagger(tagger: LstmTagger, reports: List[Report], target: List[List[int]], batch_size: int,
