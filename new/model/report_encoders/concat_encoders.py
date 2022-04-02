@@ -1,17 +1,19 @@
 from typing import List, Dict, Callable
 
 import torch
-from torch import Tensor
+from torch import Tensor, nn
 
 from new.data.report import Report
 from new.model.report_encoders.report_encoder import ReportEncoder
 from new.data_aggregation.utils import pad_features
 
-class ConcatReportEncoders(ReportEncoder):
+class ConcatReportEncoders(ReportEncoder, nn.Module):
     def __init__(self, report_encoders: List[ReportEncoder], **kwargs):
+        super().__init__()
+
         assert len(report_encoders) > 0
-        self.report_encoders = report_encoders
-        self.device = kwargs['device'] if 'device' in kwargs else 'cpu'
+        self.report_encoders = nn.ModuleList(report_encoders)
+        self.device = kwargs['device']
         self.frames_count = kwargs['frames_count']
 
     def fit(self, reports: List[Report], target: List[List[int]]):
@@ -21,7 +23,7 @@ class ConcatReportEncoders(ReportEncoder):
     def encode_report(self, report: Report) -> Tensor:
         feature_value = []
         for encoder in self.report_encoders:
-            feature_value += [pad_features(encoder.encode_report(report).to(self.device))]
+            feature_value += [pad_features(encoder.encode_report(report).to(self.device), self.frames_count)]
 
         return torch.cat(feature_value, dim=1)
 
