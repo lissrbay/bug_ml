@@ -27,22 +27,6 @@ def get_label_scores(crf: CRF, emissions: torch.Tensor, labels: torch.Tensor, ma
     return scores * mask.float().unsqueeze(-1)
 
 
-class ExtendedEmbedding(nn.Embedding):
-    def __init__(self, vocab_size=2, word_emb_dim=384):
-        super().__init__(vocab_size, word_emb_dim)
-        self.vocab_size = vocab_size
-        self.word_emb_dim = word_emb_dim
-
-    def embeddings(self, inputs):
-        emb = self(torch.LongTensor([[0]]).to(inputs.device))
-        inputs[np.where(~inputs.cpu().detach().numpy().all(axis=2))] = emb
-        emb = self(torch.LongTensor([[1]]).to(inputs.device))
-        inputs[np.where(np.sum(inputs.cpu().detach().numpy(), axis=2)
-                        == self.word_emb_dim)] = emb
-
-        return inputs
-
-
 class LstmTagger(BlamedTagger, nn.Module):
     def __init__(self, report_encoder: ReportEncoder, hidden_dim: int, max_len: int, layers_num: int = 1,
                  with_crf: bool = False, with_attention: bool = False, device: str = "cuda"):
@@ -55,7 +39,6 @@ class LstmTagger(BlamedTagger, nn.Module):
         self.max_len = max_len
         self.device = device
 
-        self.word_emb = ExtendedEmbedding(2, self.report_encoder.dim)
         self.lstm = nn.LSTM(self.report_encoder.dim, self.hidden_dim,
                             num_layers=self.layers_num, bidirectional=True)
         self.tagger = nn.Linear(2 * self.hidden_dim, 2)
@@ -71,7 +54,6 @@ class LstmTagger(BlamedTagger, nn.Module):
         features = self.report_encoder.encode_report(report).to(self.device)
         features = features[:self.max_len]
         features = pad(features, (0, 0, 0, self.max_len - features.shape[0])).unsqueeze(1)
-
         embeddings = features * mask.unsqueeze(-1)
         res, _ = self.lstm(embeddings)
 
@@ -124,7 +106,4 @@ class LstmTagger(BlamedTagger, nn.Module):
 
 
 if __name__ == "__main__":
-    # from sys
-    emb = ExtendedEmbedding()
-    x = [[[0, 1, 0, 0, 1]]]
-    print(emb.embeddings(torch.LongTensor(x)))
+    pass

@@ -3,7 +3,8 @@
     "scuffle": {
     "encoder" : {
       "hidden_dim": 70,
-      "word2vec_dim": 100
+      "word2vec_dim": 100,
+      "max_len": 80
     },
     "tagger": {
       "hidden_dim": 250,
@@ -24,6 +25,13 @@
   },
   "training": {
     "max_len": 80,
-    "batch_size": 8
+  "batch_size": 8
+  },
+  "code2seq_config_path": "/home/dumtrii/Documents/practos/spring2/code2seq/config/code2seq-java-small.yaml",
+  "astminer_cli_path": "/home/dumtrii/Documents/practos/spring2/astminer/cli.sh",
+  "astminer_config_path": "/home/dumtrii/Documents/practos/spring2/astminer/configs/bug_ml.yaml",
+  "code2seq_storage": {
+    "dump_every": 50000,
+    "cache_size": 3500
   }
 }

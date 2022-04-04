@@ -1,8 +1,9 @@
-from typing import List, Dict
-import json
-import attr
-import pickle
 import base64
+import json
+import pickle
+from typing import List, Dict
+
+import attr
 
 
 @attr.s(frozen=True, auto_attribs=True)
