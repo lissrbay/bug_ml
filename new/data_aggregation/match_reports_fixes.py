@@ -1,12 +1,13 @@
 import json
 import os
 from argparse import ArgumentParser
+from typing import List
+
 import pandas as pd
 
-from new.data_aggregation.utils import iterate_reports
+from new.constants import REPO_CHANGED_METHODS_FILE, ISSUE_REPORTS_MAPPING_FILE, REPORTS_INTERMEDIATE_DIR
 from new.data.report import Report, Frame
-from typing import List
-from new.constants import REPO_CHANGED_METHODS_FILE, ISSUE_REPORTS_MAPPING_FILE, REPORTS_SUBDIR
+from new.data_aggregation.utils import iterate_reports
 
 
 def collect_info(path_to_reports: str, data_dir: str) -> pd.DataFrame:
@@ -22,9 +23,11 @@ def collect_info(path_to_reports: str, data_dir: str) -> pd.DataFrame:
                 path.append(file)
                 hashes.append(info['hash'])
 
-    issues_info = pd.read_csv(os.path.join(path_to_reports, ISSUE_REPORTS_MAPPING_FILE))
-    issues_info_ = pd.DataFrame({"issue_id": issues, "fixed_method": method_names, 'path': path, 'hash': hashes})
-    full = issues_info.set_index("issue_id").join(issues_info_.set_index("issue_id"))
+    issues_reports = pd.read_csv(os.path.join(path_to_reports, ISSUE_REPORTS_MAPPING_FILE))
+    issues_fixed_methods = pd.DataFrame(
+        {"issue_id": issues, "fixed_method": method_names, 'path': path, 'hash': hashes}
+    )
+    full = issues_reports.set_index("issue_id").join(issues_fixed_methods.set_index("issue_id"))
     full = full.dropna()
 
     return full
@@ -40,7 +43,7 @@ def frame_label(frame: Frame, fixed_methods: List[str], paths: List[str]) -> int
     return 0
 
 
-def label_frames(report: Report, hash: str, methods_info: pd.DataFrame) -> Report:
+def label_frames(report: Report, commit_hash: str, methods_info: pd.DataFrame) -> Report:
     fixed_methods = methods_info.fixed_method.values
     paths = methods_info.path.apply(lambda x: x.split('/')[-1])
 
@@ -51,7 +54,7 @@ def label_frames(report: Report, hash: str, methods_info: pd.DataFrame) -> Repor
         frame_meta['label'] = label
         frames_with_labels.append(Frame(frame.code, frame_meta))
 
-    return Report(report.id, report.exceptions, hash, frames_with_labels)
+    return Report(report.id, report.exceptions, commit_hash, frames_with_labels)
 
 
 def find_fixed_method_for_report(issues_info: pd.DataFrame, report_id: int) -> pd.DataFrame:
@@ -67,16 +70,16 @@ def get_hash(report_id: int, issues_info: pd.DataFrame) -> str:
 
 def label_reports(issues_info: pd.DataFrame, path_to_reports: str, path_to_reports_save: str):
     reports_success = 0
-    for file_name in iterate_reports(path_to_reports, format='.json'):
+    for file_name in iterate_reports(path_to_reports, ext='.json'):
         path_to_file = os.path.join(path_to_reports, file_name)
         report = Report.load_from_base_report(path_to_file)
 
         fixed_methods = find_fixed_method_for_report(issues_info, report.id)
-        hash = report.hash
+        report_hash = report.hash
         if fixed_methods.shape[0] != 0:
-            hash = get_hash(report.id, issues_info)
+            report_hash = get_hash(report.id, issues_info)
 
-        report = label_frames(report, hash, fixed_methods)
+        report = label_frames(report, report_hash, fixed_methods)
 
         reports_success += 1 if sum([frame.meta['label'] for frame in report.frames]) else 0
         if report.id != 0:
@@ -87,9 +90,10 @@ def label_reports(issues_info: pd.DataFrame, path_to_reports: str, path_to_repor
 
 def match_reports_to_labels(raw_reports_path: str, data_dir: str = '../../data'):
     path_to_reports = os.path.join(raw_reports_path, "reports")
-    path_to_reports_save = os.path.join(raw_reports_path, REPORTS_SUBDIR)
+    reports_save_path = os.path.join(data_dir, REPORTS_INTERMEDIATE_DIR)
+    os.makedirs(reports_save_path)
     issues_info = collect_info(raw_reports_path, data_dir)
-    label_reports(issues_info, path_to_reports, path_to_reports_save)
+    label_reports(issues_info, path_to_reports, reports_save_path)
 
 
 if __name__ == "__main__":

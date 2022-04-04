@@ -4,10 +4,17 @@
 import re
 from typing import Tuple, List, Optional, Set
 
+import attr
 from git import Repo, db
 
 from new.constants import MAX_DIFF_FILES
-from new.data_aggregation.parser_java_kotlin import Parser, AST
+from new.data_aggregation.changes.parser_java_kotlin import Parser, AST
+
+
+@attr.s
+class ChangedMethodSignature:
+    name: str
+    type: str
 
 
 def is_match_lang_ext(filename: str):
@@ -44,20 +51,20 @@ def code_fragment(bounds: Tuple[int, int], code: str):
     return ''.join(code)[bounds[0]: bounds[1]]
 
 
-def compare_ast(ast_a: AST, code_a: str, ast_b: AST, code_b: str) -> Set[Tuple[str, str]]:
-    methods_info_a = dict(ast_a.get_method_names_and_bounds())
-    methods_info_b = dict(ast_b.get_method_names_and_bounds())
-    all_methods = list(methods_info_a.keys()) + list(methods_info_b.keys())
+def compare_ast(ast_a: AST, code_a: str, ast_b: AST, code_b: str) -> Set[ChangedMethodSignature]:
+    methods_info_a = set(ast_a.get_method_names_and_bounds())
+    methods_info_b = set(ast_b.get_method_names_and_bounds())
+    all_methods = methods_info_a | methods_info_b
     changed_methods = set()
     for method in all_methods:
         if method in methods_info_a and method in methods_info_b:
-            method_code_a = code_fragment(methods_info_a[method][0], code_a)
-            method_code_b = code_fragment(methods_info_b[method][0], code_b)
+            method_code_a = code_fragment(method.bounds, code_a)
+            method_code_b = code_fragment(method.bounds, code_b)
 
             if method_code_a != method_code_b:
-                changed_methods.add((method, methods_info_a[method][1]))
+                changed_methods.add((method, method.type))
         if method in methods_info_a and not (method in methods_info_b):
-            changed_methods.add((method, methods_info_a[method][1]))
+            changed_methods.add(ChangedMethodSignature(method.name, method.type))
     return changed_methods
 
 

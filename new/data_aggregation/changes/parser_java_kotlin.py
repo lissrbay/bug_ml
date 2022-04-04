@@ -1,9 +1,17 @@
 import re
 from typing import List, Tuple, Optional
 
+import attr
+
+
+@attr.s
+class Scope:
+    name: str
+    bounds: Tuple[int, int]
+    type: str
+
 
 class AST:
-    # TODO: defaults
     def __init__(self, children: List['AST'] = None):
         self.label = None
         self.children = children or []
@@ -17,31 +25,31 @@ class AST:
         s += ")"
         return s
 
-    def get_method_names_and_bounds(self) -> List[Tuple[str, Tuple[Tuple[int, int], str]]]:
+    def get_method_names_and_bounds(self) -> List[Scope]:
         paths = self.paths()
         method_names_and_bounds = set()
         for path in paths:
             full_name = ''
             for scope in path:
-                full_name += scope[0]
-                if scope[2] in ['method', 'constructor', 'static_init']:
-                    method_names_and_bounds.add((full_name, (scope[1], scope[2])))
+                full_name += scope.name
+                if scope.type in ['method', 'constructor', 'static_init']:
+                    method_names_and_bounds.add(Scope(full_name, scope.bounds, scope.type))
                 full_name += ': '
         return list(method_names_and_bounds)
 
     def paths(
             self,
             node: 'AST' = None,
-            path: List[Tuple[str, Tuple[int, int], str]] = None
-    ) -> List[Tuple[str, Tuple[int, int], str]]:
+            path: List[Scope] = None
+    ) -> List[List[Scope]]:
         node = node or self
         path = path or []
         paths = []
         if node.type != 'code':
-            path.append((node.label, node.bounds, node.type))
+            path.append(Scope(node.label, node.bounds, node.type))
         if node.children:
             for child in node.children:
-                paths.extend(self.paths(child, path[:]))
+                paths.extend(self.paths(child, path))
         else:
             paths.append(path)
         return paths
