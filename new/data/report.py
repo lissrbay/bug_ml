@@ -23,7 +23,7 @@ class Report:
     frames: List[Frame]
 
     @staticmethod
-    def _read_frames_from_base(base_report: Dict):
+    def _read_frames_from_base(base_report: Dict) -> List[Frame]:
         frames = []
         for frame in base_report['frames']:
             method_meta = {
@@ -44,7 +44,7 @@ class Report:
         return frames
 
     @staticmethod
-    def load_from_base_report(report_path: str):
+    def load_from_base_report(report_path: str) -> "Report":
         with open(report_path, 'r') as report_io:
             base_report = json.load(report_io)
         exceptions = base_report['class']
@@ -58,13 +58,13 @@ class Report:
         return report
 
     @staticmethod
-    def load_report(name: str):
-        with open(name, 'rb') as report_io:
+    def load_report(path: str) -> "Report":
+        with open(path, 'rb') as report_io:
             return pickle.load(report_io)
 
-    def save_report(self, name: str):
-        with open(name, 'wb') as report_io:
+    def save_report(self, path: str):
+        with open(path, 'wb') as report_io:
             pickle.dump(self, report_io)
 
-    def frames_count(self):
+    def frames_count(self) -> int:
         return len(self.frames)
