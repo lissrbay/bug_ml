@@ -5,8 +5,8 @@ from torch.nn.functional import pad
 from torch import FloatTensor
 
 
-def iterate_reports(path_to_reports: str, ext: str = ""):
-    for root, _, files in filter(lambda x: x[0] == path_to_reports, os.walk(path_to_reports)):
+def iterate_reports(reports_dir: str, ext: str = ""):
+    for root, _, files in filter(lambda x: x[0] == reports_dir, os.walk(reports_dir)):
         for file in tqdm(files):
             if os.path.splitext(file)[1] != ext:
                 continue
