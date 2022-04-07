@@ -61,7 +61,7 @@ class RobertaReportEncoder(ReportEncoder, nn.Module):
 
         return code
 
-    def random_frames_for_autograd(self, report, k=25):
+    def random_frames_for_autograd(self, report, k=20):
         take_rand = np.zeros(len(report.frames))
 
         if self.mode == 'train':
@@ -81,19 +81,29 @@ class RobertaReportEncoder(ReportEncoder, nn.Module):
     def encode_report(self, report: Report) -> Tensor:
         report_embs = []
         take_rand = self.random_frames_for_autograd(report)
+        #print(take_rand)
+        #print(list(self.model.parameters())[-3].cpu().detach().numpy()[:10])
+   
         for i, frame in enumerate(report.frames[:self.frames_count]):
             code = frame.get_code_decoded()
             method_code = self.extract_method_code(code, clean_method_name(frame.meta['method_name']))
             if method_code:
-                code_tokens = self.tokenizer.tokenize(method_code[:512])
+                code_tokens = self.tokenizer.tokenize(method_code[:256])
                 tokens_ids = torch.LongTensor(self.tokenizer.convert_tokens_to_ids(code_tokens))[None, :]
-                context_embeddings = self.model(tokens_ids.to(self.device))[0]
+                if take_rand[i]:
+                    with torch.no_grad():
+                        context_embeddings = self.model(tokens_ids.to(self.device))[0]
+                else:
+                    context_embeddings = self.model(tokens_ids.to(self.device))[0]
+
+
                 vec = context_embeddings.mean(axis=1).reshape((self.BERT_MODEL_DIM,))
+                
                 del tokens_ids, code_tokens
             else:
                 vec = torch.zeros((self.BERT_MODEL_DIM,))
-            vec =  torch.tensor(vec, requires_grad=bool(take_rand[i])).to(self.device)
-            report_embs.append(vec)
+  
+            report_embs.append(vec.to(self.device))
 
         return torch.cat(report_embs).reshape(-1, self.BERT_MODEL_DIM)
 

@@ -1,11 +1,11 @@
 from abc import ABC, abstractmethod
 from typing import List
 
-from torch import Tensor
+from torch import Tensor, nn
 
 from new.data.report import Report
 
-class ReportEncoder(ABC):
+class ReportEncoder(ABC, nn.Module):
     def fit(self, reports: List[Report], target: List[List[int]]) -> 'ReportEncoder':
         return self
 
