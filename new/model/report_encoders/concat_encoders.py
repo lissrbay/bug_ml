@@ -21,7 +21,7 @@ class ConcatReportEncoders(ReportEncoder):
     def encode_report(self, report: Report) -> Tensor:
         feature_value = []
         for encoder in self.report_encoders:
-            feature_value += [pad_features(encoder.encode_report(report).to(self.device))]
+            feature_value += [pad_features(encoder.encode_report(report).to(self.device), self.frames_count)]
 
         return torch.cat(feature_value, dim=1)
 

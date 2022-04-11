@@ -20,8 +20,7 @@ class GitFeaturesTransformer(ReportEncoder):
         self.raw_feature_names = [
             'commit_time',
             'modified_time_diff',
-            'authors',
-            'report_frame',
+            'author',
             'label'
         ]
         self.feature_names = [
@@ -29,7 +28,7 @@ class GitFeaturesTransformer(ReportEncoder):
                          'worktime',
                          'last_commit_time',
                          'occurences',
-                         'bug_count',
+                         'bugs_count',
                          'modified_time_diff'
                          ]
 
@@ -45,9 +44,9 @@ class GitFeaturesTransformer(ReportEncoder):
                 committed_date, authored_date = self.get_modified_time(frame)
                 authors = frame.meta['author'].email if 'author' in frame.meta else ''
 
-                features['commit_date'].append(committed_date)
+                features['commit_time'].append(committed_date)
                 features['modified_time_diff'].append(committed_date - authored_date)
-                features['authors'].append(authors)
+                features['author'].append(authors)
                 features['label'].append(target[j][i])
 
         return pd.DataFrame(features)
@@ -128,11 +127,10 @@ class GitFeaturesTransformer(ReportEncoder):
         features = self.get_modified_times(report.frames[:self.frames_count], features)
         features = self.get_author_features(report.frames[:self.frames_count], features)
 
-        report_features = [torch.FloatTensor(features[name]) for name in self.feature_names]
+        report_features = [torch.FloatTensor(features[name]).reshape(1, -1) for name in self.feature_names]
         report_features = torch.cat(report_features, dim=0).T
-
         return report_features
 
     @property
     def dim(self) -> int:
-        return len(self.features_names)
+        return len(self.feature_names)

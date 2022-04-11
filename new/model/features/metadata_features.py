@@ -45,7 +45,7 @@ class MetadataFeaturesTransformer(ReportEncoder):
         features = {k: [] for k in self.feature_names}
         frames = report.frames[:self.frames_count]
         features = self.extract_method_name_features(frames, features)
-        # features = self.extract_exception_class(report, features) not use cat feature
+        # features = self.extract_exception_class(report, features) # not use cat feature now
         features = self.extract_method_file_position(frames, features)
         features = self.extract_method_position(frames, features)
         report_features = [torch.FloatTensor(features[name]) for name in self.feature_names]

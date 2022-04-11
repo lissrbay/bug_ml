@@ -14,4 +14,7 @@ def iterate_reports(path_to_reports: str, ext=""):
 
 def pad_features(report_features, frames_max):
     pad_size = frames_max - min(len(report_features), frames_max)
-    return pad(FloatTensor(report_features), (0, 0, 0, pad_size))
+    if len(report_features.shape) == 2:
+        return pad(report_features, (0, 0, 0, pad_size))
+    elif len(report_features.shape) == 1:
+        return pad(report_features, (0, pad_size))

@@ -1,5 +1,6 @@
-from typing import List
+from typing import List, Union
 
+import numpy as np
 from catboost import CatBoost
 
 from new.data.report import Report
@@ -8,7 +9,7 @@ from new.model.features.features_computer import FeaturesComputer
 from new.model.report_encoders.report_encoder import ReportEncoder
 
 
-class CatBoostTagger(BlamedTagger):
+class CatBoostRanker(BlamedRanker):
     """
     Combine predictions of other models, add features and get final CatBoost-based model
     """
@@ -22,10 +23,8 @@ class CatBoostTagger(BlamedTagger):
         'metric_period': 100
     }
 
-    def __init__(self, models: List[BlamedTagger], report_encoder: ReportEncoder):
-        self.taggers = models
-        self.report_encoder = report_encoder
-        self.model = CatBoost(CatBoostTagger.default_params)
+    def __init__(self, feature_sources: List[Union[BlamedTagger, ReportEncoder]]):
+        self.feature_sources = feature_sources
 
     def create_features(self, report: Report) -> List[List[float]]:
         features = self.report_encoder.encode_report(report).tolist()
@@ -35,12 +34,49 @@ class CatBoostTagger(BlamedTagger):
                 features[i].append(value)
         return features
 
+    def train_test_splitting(self, features, targets, grouping, fraction=0.9):
+        reports_count = len(list(set(grouping)))
+        train_count = int(reports_count * fraction)
+
+        last_group = -1
+
+        for i in grouping:
+            if i != last_group:
+
+        train_reports, test_reports = report_ids[:train_count], report_ids[train_count:]
+        df_val = df_features[df_features['report_id'].isin(test_reports)].drop(
+            ['method_name', 'indices', 'exception_class'], axis=1)
+
+        df_features = df_features[df_features['report_id'].isin(train_reports)]
+        X, test_X, y, test_y = train_test_split(
+            df_features.drop(['label', 'method_name', 'indices', 'exception_class'], axis=1), df_features['label'],
+            test_size=0.1, shuffle=False)
+        train_dataset = Pool(X.drop(["report_id"], axis=1), y, group_id=X['report_id'])
+        test_dataset = Pool(test_X.drop(["report_id"], axis=1), test_y, group_id=test_X['report_id'])
+        return train_dataset, test_dataset, df_val
+
+    def get_features(self, reports: List[Report]):
+        features = []
+
+        for feature_source in self.feature_sources:
+            source_features = []
+            for report in reports:
+                if isinstance(feature_source, BlamedTagger):
+                    source_features.append(feature_source.predict(report).reshape(-1, 1))
+                elif isinstance(feature_source, ReportEncoder):
+                    source_features.append(feature_source.encode_report(report))
+            features.append(source_features)
+
+        report_ids_for_grouping = []
+        for report in reports:
+            for _ in report.frames:
+                report_ids_for_grouping.append(report.id)
+
+        return np.vstack(features), report_ids_for_grouping
+
     def fit(self, reports: List[Report], target: List[List[int]]) -> 'CatBoostTagger':
-        self.report_encoder.fit(reports, target)
-        for tagger in self.taggers:
-            tagger.fit(reports, target)
-        features = [self.create_features(report) for report in reports]
-        self.model.fit(features, target)
+        features, grouping = self.get_features(reports)
+
         return self
 
     def predict(self, report: Report) -> List[float]:
