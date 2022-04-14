@@ -34,7 +34,8 @@ def get_commit_changed_methods(repo_path: str, issue2commit: Dict[str, str]) -> 
 
 def parse_method_signature(changed_methods: Set[ChangedMethodSignature]) -> List[Tuple[str, str]]:
     methods = []
-    for full_method_name, _ in changed_methods:
+    for changed_method in changed_methods:
+        full_method_name = changed_method.name
         filename = full_method_name.split(': ')[0]
         method = full_method_name.split(': ')[-1].split()[-1]
         methods.append((filename, method))

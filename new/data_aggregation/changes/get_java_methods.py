@@ -11,10 +11,10 @@ from new.constants import MAX_DIFF_FILES
 from new.data_aggregation.changes.parser_java_kotlin import Parser, AST
 
 
-@attr.s
+@attr.s(eq=False)
 class ChangedMethodSignature:
-    name: str
-    type: str
+    name: str  = attr.attrib()
+    type: str  = attr.attrib()
 
 
 def is_match_lang_ext(filename: str):
