@@ -1,20 +1,24 @@
 import subprocess
 import argparse
 
-from new.data_aggregation.changes.get_changed_methods import get_changed_methods
+from new.data_aggregation.changes.save_changed_methods import save_changed_methods
 from new.data_aggregation.match_reports_fixes import match_reports_to_labels
 from new.data_aggregation.add_path_info import add_paths_to_reports
 from new.data_aggregation.collect_sources import collect_reports_sources
 from new.data_aggregation.git_data import add_git_data
 from new.data_aggregation.pycode2seq_embeddings import get_reports_embeddings
 from new.constants import EMBEDDINGS_CACHE
+from new.data_aggregation.steps.save_fix_commits import save_fix_commits
 
 
 def collect_data(repo_path: str, reports_dir: str, data_dir: str, files_limit: int):
-    collect_commits = ["sh", "../../collect_fix_commits.sh", repo_path, data_dir]
-    subprocess.Popen(collect_commits).communicate()
+    """
+    Collects all necessary data.
+    """
 
-    get_changed_methods(repo_path, data_dir)
+    save_fix_commits(repo_path, data_dir)  # Collecting fix commits to data directory
+    save_changed_methods(repo_path, data_dir)
+
     match_reports_to_labels(reports_dir, data_dir)
     add_paths_to_reports(repo_path, reports_dir, files_limit)
     collect_reports_sources(repo_path, reports_dir, files_limit)
