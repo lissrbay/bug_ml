@@ -62,7 +62,7 @@ def train(reports_path: str, save_path: str, model_name: Optional[str]):
         report_path = os.path.join(reports_path, file_name)
         report = Report.load_report(report_path)
         if report.frames:
-            if sum(frame.meta["label"] for frame in report.frames) > 1:
+            if sum(frame.meta["label"] for frame in report.frames) > 0:
                 reports.append(report)
 
     reports = reports
@@ -116,12 +116,6 @@ def train(reports_path: str, save_path: str, model_name: Optional[str]):
             raise ValueError(f"Wrong model type. Should be in {model_names}")
     else:
 
-        encoder = ConcatReportEncoders([RobertaReportEncoder(frames_count=config["training"]["max_len"], device='cuda'),
-                                        # path_to_precomputed_embs="/home/lissrbay/Загрузки/code2seq_embs"),
-                                        # GitFeaturesTransformer(
-                                        #    frames_count=config["training"]["max_len"]).fit(reports, target),
-                                        # MetadataFeaturesTransformer(frames_count=config["training"]["max_len"])
-                                        ], device='cuda')
         tagger = LstmTagger(
             encoder,
             max_len=config["training"]["max_len"],
