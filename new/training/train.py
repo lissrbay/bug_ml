@@ -17,7 +17,6 @@ from new.data_aggregation.utils import iterate_reports
 from new.model.lstm_tagger import LstmTagger
 from new.model.report_encoders.code2seq_report_encoder import Code2SeqReportEncoder
 from new.model.report_encoders.codebert_encoder import RobertaReportEncoder
-from new.model.report_encoders.concat_encoders import ConcatReportEncoders
 from new.model.report_encoders.scuffle_report_encoder import ScuffleReportEncoder
 from new.model.report_encoders.tfidf import TfIdfReportEncoder
 from new.training.torch_training import train_lstm_tagger
@@ -116,11 +115,13 @@ def train(reports_path: str, save_path: str, model_name: Optional[str]):
             raise ValueError(f"Wrong model type. Should be in {model_names}")
     else:
 
+        encoder = RobertaReportEncoder(frames_count=config["training"]["max_len"], device='cuda')
+
         tagger = LstmTagger(
             encoder,
             max_len=config["training"]["max_len"],
             layers_num=2,
-            hidden_dim=200
+            hidden_dim=250
         )
 
     tagger = train_lstm_tagger(tagger, reports, target, **config["training"])
