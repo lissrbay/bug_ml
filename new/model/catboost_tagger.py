@@ -2,9 +2,10 @@ import pickle
 from typing import List, Union
 
 import numpy as np
+import pandas as pd
 from catboost import CatBoost, Pool
 
-from model.blamed_tagger import BlamedTagger
+from new.model.blamed_tagger import BlamedTagger
 from new.data.report import Report
 from new.model.blamed_ranker import BlamedRanker
 from new.model.report_encoders.report_encoder import ReportEncoder
@@ -16,7 +17,7 @@ class CatBoostRanker(BlamedRanker):
     """
 
     default_params = {
-        'iterations': 200,
+        'iterations': 500,
         'depth': 5,
         'loss_function': 'QuerySoftMax',
         'custom_metric': ['PrecisionAt:top=2', 'RecallAt:top=2', 'MAP:top=2'],
@@ -25,7 +26,8 @@ class CatBoostRanker(BlamedRanker):
     }
 
     def __init__(self, feature_sources: List[Union[BlamedTagger, ReportEncoder]],
-                save_path: str):
+                save_path: str = None):
+        self.model = CatBoost(self.default_params)
         self.feature_sources = feature_sources
         self.save_path = save_path
 
@@ -54,17 +56,20 @@ class CatBoostRanker(BlamedRanker):
     def train_test_splitting(self, features, targets, grouping, fraction=0.9):
         reports_count = len(list(set(grouping)))
         train_count = int(reports_count * fraction)
-
+        targets_ = []
+        for i in targets:
+            for j in i:
+                targets_.append(j)
         border = self.split_by_report_id(grouping, train_count)
 
         train_features, test_features = features[:border], features[border:]
-        train_targets, test_targets = targets[:border], targets[border:]
+        train_targets, test_targets = targets_[:border], targets_[border:]
         train_groups, test_groups = grouping[:border], grouping[border:]
 
         train_dataset = Pool(train_features, train_targets, group_id=train_groups)
         test_dataset = Pool(test_features, test_targets, group_id=test_groups)
 
-        return train_dataset, test_dataset
+        return train_dataset, train_targets, train_groups, test_dataset, test_targets, test_groups
 
     def get_features(self, reports: List[Report]):
         features = []
@@ -73,26 +78,34 @@ class CatBoostRanker(BlamedRanker):
             source_features = []
             for report in reports:
                 if isinstance(feature_source, BlamedTagger):
-                    source_features.append(feature_source.predict(report).reshape(-1, 1))
+                    source_features.append(feature_source.predict(report).to('cpu').detach().numpy().reshape(-1, 1)[:len(report.frames)])
                 elif isinstance(feature_source, ReportEncoder):
-                    source_features.append(feature_source.encode_report(report))
-            features.append(source_features)
-
+                    source_features.append(feature_source.encode_report(report).to('cpu').detach().numpy())
+            features.append(np.vstack(source_features))
         report_ids_for_grouping = []
         for report in reports:
             for _ in report.frames:
                 report_ids_for_grouping.append(report.id)
 
-        return np.vstack(features), report_ids_for_grouping
+        return np.hstack(features), report_ids_for_grouping
 
     def fit(self, reports: List[Report], targets: List[List[int]]) -> 'CatBoostTagger':
         features, grouping = self.get_features(reports)
-        test_pool, train_pool = self.train_test_splitting(features, targets, grouping)
+        train_pool, train_targets, train_groups, test_pool, test_targets, test_groups = self.train_test_splitting(features, targets, grouping)
 
-        self.model = CatBoost(self.default_params)
         self.model.fit(train_pool, eval_set=test_pool)
-        self.save(self.save_path)
+        self.count_metrics(test_pool, test_targets, test_groups)
+        if self.save_path is not None:
+            self.save(self.save_path)
         return self
+
+    def count_metrics(self, test_pool, targets, groups):
+        preds = self.model.predict(test_pool)
+        df = pd.DataFrame({'pred': preds, 'group':groups, 'target':targets})
+        df_predicted = df.groupby("group").apply(lambda x: x.sort_values(ascending=False, by="pred").head(1))
+        df_sum = df_predicted.reset_index(drop=True).groupby("group").sum()
+        results = df_sum[df_sum["target"] >= 1].shape[0] / df_sum.shape[0]
+        print(results)
 
     def predict(self, report: Report) -> List[float]:
         features = self.create_features(report)

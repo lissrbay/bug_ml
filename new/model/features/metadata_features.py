@@ -29,26 +29,29 @@ class MetadataFeaturesTransformer(ReportEncoder):
         return method_name_features
 
     def extract_exception_class(self, report: Report, features):
-        return features['exceptions'].extend([report.exceptions for _ in report.frames[:self.frames_count]])
+        features['exceptions'].extend([report.exceptions for _ in report.frames[:self.frames_count]])
+        return features
 
     def extract_method_position(self, frames: List[Frame], features):
-        return features['method_stack_position'].extend([i for i in range(len(frames))])
+        features['method_stack_position'].extend([i for i in range(len(frames))])
+        return features
 
     def extract_method_file_position(self, frames: List[Frame], features):
         for frame in frames:
             if 'line' in frame.meta:
-                features.append(0 if frame.meta['line'] is None else int(frame.meta['line']))
+                features['method_file_position'].append(0 if frame.meta['line'] is None else int(frame.meta['line']))
             else:
                 raise Exception('No field line in frame.meta')
+        return features
 
     def encode_report(self, report: Report) -> Tensor:
         features = {k: [] for k in self.feature_names}
-        frames = report.frames[:self.frames_count]
+        frames = report.frames#[:self.frames_count]
         features = self.extract_method_name_features(frames, features)
         # features = self.extract_exception_class(report, features) # not use cat feature now
         features = self.extract_method_file_position(frames, features)
         features = self.extract_method_position(frames, features)
-        report_features = [torch.FloatTensor(features[name]) for name in self.feature_names]
+        report_features = [torch.FloatTensor(features[name]).reshape(1, -1) for name in self.feature_names]
         report_features = torch.cat(report_features, dim=0).T
         return report_features
 
