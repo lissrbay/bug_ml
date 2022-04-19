@@ -5,16 +5,18 @@ import re
 from dataclasses import dataclass
 from typing import Tuple, List, Optional, Set
 
+import attr
 from git import Repo
 
 from new.constants import MAX_DIFF_FILES
 from new.data_aggregation.changes.parser_java_kotlin import Parser, AST
+import attrs
 
 
-@attr.s(eq=False)
-class ChangedMethodSignature:
-    name: str  = attr.attrib()
-    type: str  = attr.attrib()
+@dataclass(frozen=True)
+class MethodSignature:
+    name: Optional[str] = None
+    type: Optional[str] = None
 
 
 def is_lang_match(file_name: str) -> bool:

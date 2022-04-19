@@ -7,7 +7,7 @@ from typing import Dict, Set, List, Tuple
 from tqdm import tqdm
 
 from new.constants import REPO_CHANGED_METHODS_FILE, REPO_COMMIT_INFO_FILE
-from new.data_aggregation.changes.get_java_methods import find_changed_methods, ChangedMethodSignature
+from new.data_aggregation.changes.get_java_methods import find_changed_methods, MethodSignature
 
 
 def get_commits_and_issues(data_dir: str) -> Dict[str, str]:
@@ -26,13 +26,13 @@ def get_commits_and_issues(data_dir: str) -> Dict[str, str]:
     return issue2hash
 
 
-def get_commit_changed_methods(repo_path: str, issue2commit: Dict[str, str]) -> Dict[str, Set[ChangedMethodSignature]]:
+def get_commit_changed_methods(repo_path: str, issue2commit: Dict[str, str]) -> Dict[str, Set[MethodSignature]]:
     return {
         commit: find_changed_methods(repo_path, (f"{commit}~1", commit)) for _, commit in tqdm(issue2commit.items())
     }
 
 
-def parse_method_signature(changed_methods: Set[ChangedMethodSignature]) -> List[Tuple[str, str]]:
+def parse_method_signature(changed_methods: Set[MethodSignature]) -> List[Tuple[str, str]]:
     methods = []
     for changed_method in changed_methods:
         full_method_name = changed_method.name
@@ -43,7 +43,7 @@ def parse_method_signature(changed_methods: Set[ChangedMethodSignature]) -> List
 
 
 def save_fixed_methods(data_dir: str, issue2commit: Dict[str, str],
-                       commit_changed_methods: Dict[str, Set[ChangedMethodSignature]]):
+                       commit_changed_methods: Dict[str, Set[MethodSignature]]):
     info = dict()
     for issue_id, commit in issue2commit.items():
         changed_methods = commit_changed_methods[commit]
@@ -52,8 +52,26 @@ def save_fixed_methods(data_dir: str, issue2commit: Dict[str, str],
             methods = [{"path": method[0], "name": method[1]} for method in parse_method_signature(changed_methods)]
         info[issue_id] = {"hash": commit, "fixed_methods": methods}
 
-    with open(os.path.join(data_dir, REPO_CHANGED_METHODS_FILE), 'w') as f:
-        json.dump(info, f, indent=4, ensure_ascii=False)
+    # with open(os.path.join(data_dir, REPO_CHANGED_METHODS_FILE), 'w') as f:
+    #     json.dump(info, f, indent=4, ensure_ascii=False)
+
+
+# xs = {
+#     # MethodSignature(
+#     #     name='platform/cwm-host/src/actions/BackendActionDataContext.kt: class BackendActionDataContext: static: init : override fun getData: private fun getDataInner1: private fun getDataInner2',
+#     #     type='method'),
+#     # MethodSignature(
+#     #     name='platform/cwm-host/src/actions/BackendActionDataContext.kt: class BackendActionDataContext: static: init : override fun getData: private fun getDataInner1',
+#     #     type='method'),
+#     MethodSignature(
+#         name='platform/cwm-host/src/actions/BackendActionDataContext.kt: class BackendActionDataContext: static: init : override fun getData: private fun getDataInner1: private fun getDataInner2: private fun calcData: private fun getContextComponent',
+#         type='method')
+#      }
+#
+# for x in parse_method_signature(xs):
+#     print(x)
+#
+# exit(0)
 
 
 def get_all_changed_methods(repo_path: str, data_dir: str):

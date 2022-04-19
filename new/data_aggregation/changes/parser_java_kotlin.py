@@ -1,14 +1,16 @@
 import re
+from dataclasses import dataclass
 from typing import List, Tuple, Optional
 
 import attr
 
 
-@attr.s(eq=False)
+# @attr.s(eq=False)
+@dataclass(frozen=True)
 class Scope:
-    name: str = attr.attrib()
-    bounds: Tuple[int, int] = attr.attrib()
-    type: str = attr.attrib()
+    name: Optional[str] = None  # attr.attrib()
+    bounds: Optional[Tuple[int, int]] = None  # attr.attrib()
+    type: Optional[str] = None  # attr.attrib()
 
 
 class AST:
@@ -163,7 +165,8 @@ class Parser:
         self.labels = all_declarations  # TODO: return it w/o state
 
     @staticmethod
-    def find_declarations_by_pattern(pattern: re.Pattern, code: str, declaration_type: str) -> List[Tuple[str, str, int]]:
+    def find_declarations_by_pattern(pattern: re.Pattern, code: str, declaration_type: str) -> List[
+        Tuple[str, str, int]]:
         declarations = [(m.group(0), declaration_type, m.end(0)) for m in re.finditer(pattern, code)]
         if declaration_type == "method":
             declarations = [(i[0].split('(')[0], i[1], i[2]) for i in declarations]
