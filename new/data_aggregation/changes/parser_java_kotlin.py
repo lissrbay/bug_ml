@@ -4,11 +4,11 @@ from typing import List, Tuple, Optional
 import attr
 
 
-@attr.s
+@attr.s(eq=False)
 class Scope:
-    name: str
-    bounds: Tuple[int, int]
-    type: str
+    name: str = attr.attrib()
+    bounds: Tuple[int, int] = attr.attrib()
+    type: str = attr.attrib()
 
 
 class AST:
@@ -46,7 +46,7 @@ class AST:
         path = path or []
         paths = []
         if node.type != 'code':
-            path.append(Scope(node.label, node.bounds, node.type))
+            path.append(Scope(name=node.label, bounds=node.bounds, type=node.type))
         if node.children:
             for child in node.children:
                 paths.extend(self.paths(child, path))

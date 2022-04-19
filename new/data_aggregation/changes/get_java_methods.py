@@ -11,10 +11,10 @@ from new.constants import MAX_DIFF_FILES
 from new.data_aggregation.changes.parser_java_kotlin import Parser, AST
 
 
-@dataclass
-class MethodSignature:
-    name: str
-    type: str
+@attr.s(eq=False)
+class ChangedMethodSignature:
+    name: str  = attr.attrib()
+    type: str  = attr.attrib()
 
 
 def is_lang_match(file_name: str) -> bool:
@@ -35,8 +35,7 @@ def collect_modified_files_last_two_commits(repo: Repo, commits: Tuple[str, str]
     commit_dev = repo.commit(commits[0])
     commit_origin_dev = repo.commit(commits[1])
     diff_index = commit_origin_dev.diff(commit_dev)
-    diff_files = []
-
+    diff_files: List[str] = []
     for diff_item in diff_index.iter_change_type('M'):
         diff_files.append(diff_item.b_path)
         if len(diff_files) > MAX_DIFF_FILES:
