@@ -1,10 +1,9 @@
 import argparse
 import json
-from collections import defaultdict
-from typing import Dict, List
-from os.path import join
 import re
-import pandas as pd
+from collections import defaultdict
+from os.path import join
+from typing import Dict, List
 
 from new.constants import ISSUE_TO_COMMITS_FILE, FIX_COMMITS_FILE
 
@@ -13,8 +12,6 @@ def save(issue_to_commits: Dict[int, List[str]], data_dir: str):
     save_path = join(data_dir, ISSUE_TO_COMMITS_FILE)
     with open(save_path, "w") as file:
         json.dump(issue_to_commits, file, indent=4)
-    # df = pd.DataFrame(issue_to_commit.items(), columns=["issue", "commit_hash"])
-    # df.to_csv(save_path, index=False)
 
 
 def load_commit_log(data_dir: str) -> str:

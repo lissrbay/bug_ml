@@ -8,7 +8,7 @@ from new.data_aggregation.collect_sources import collect_reports_sources
 from new.data_aggregation.git_data import add_git_data
 from new.data_aggregation.pycode2seq_embeddings import get_reports_embeddings
 from new.constants import EMBEDDINGS_CACHE
-from new.data_aggregation.steps.save_fix_commits import save_fix_commits
+from new.data_aggregation.pipeline.save_fix_commits import save_fix_commits
 
 
 def collect_data(repo_path: str, reports_dir: str, data_dir: str, files_limit: int):
