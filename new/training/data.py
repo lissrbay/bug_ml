@@ -21,10 +21,10 @@ class ReportsDataModule(pl.LightningDataModule):
 
     def setup(self, stage: Optional[str] = None):
         self.rtrain, self.rval = train_test_split(ReportsDataset(
-            self.reports, self.targets, self.max_len), test_size=0.2, shuffle=False)
+            self.reports, self.targets, self.max_len), test_size=0.2, shuffle=True)
 
     def train_dataloader(self) -> DataLoader:
-        return DataLoader(self.rtrain, self.batch_size, collate_fn=report_collate, num_workers=12)
+        return DataLoader(self.rtrain, self.batch_size, collate_fn=report_collate, num_workers=12, shuffle=True)
 
     def val_dataloader(self) -> Union[DataLoader, List[DataLoader]]:
         return DataLoader(self.rval, self.batch_size, collate_fn=report_collate, num_workers=12)
