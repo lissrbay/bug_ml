@@ -17,17 +17,19 @@ def collect_info(path_to_reports: str, data_dir: str) -> pd.DataFrame:
         fixed_methods = json.load(fixed_methods_io)
 
         for issue, info in fixed_methods.items():
-            for file, method in info['fixed_methods']:
+            for changed_method_info in info['fixed_methods']:
+                file_path = changed_method_info['path']
+                method = changed_method_info['name']
                 issues.append(int(issue))
                 method_names.append(method)
-                path.append(file)
+                path.append(file_path)
                 hashes.append(info['hash'])
 
     issues_reports = pd.read_csv(os.path.join(path_to_reports, ISSUE_REPORTS_MAPPING_FILE))
     issues_fixed_methods = pd.DataFrame(
         {"issue_id": issues, "fixed_method": method_names, 'path': path, 'hash': hashes}
     )
-    full = issues_reports.set_index("issue_id").join(issues_fixed_methods.set_index("issue_id"))
+    full = issues_reports.set_index("issue_id").join(issues_fixed_methods.set_index("issue_id"), how='inner')
     full = full.dropna()
 
     return full
@@ -36,8 +38,6 @@ def collect_info(path_to_reports: str, data_dir: str) -> pd.DataFrame:
 def frame_label(frame: Frame, fixed_methods: List[str], paths: List[str]) -> int:
     method = frame.meta['method_name']
     for fixed_method, path in zip(fixed_methods, paths):
-        if path != frame.meta['file_name']:
-            continue
         if method and fixed_method in method:
             return 1
     return 0
@@ -80,10 +80,10 @@ def label_reports(issues_info: pd.DataFrame, path_to_reports: str, path_to_repor
             report_hash = get_hash(report.id, issues_info)
 
         report = label_frames(report, report_hash, fixed_methods)
-
-        reports_success += 1 if sum([frame.meta['label'] for frame in report.frames]) else 0
-        if report.id != 0:
-            report.save_report(os.path.join(path_to_reports_save, file_name.split('.')[0]))
+        report_success = 1 if sum([frame.meta['label'] for frame in report.frames]) else 0
+        reports_success += report_success
+        if report.id != 0 and report_success:
+            report.save_report(os.path.join(path_to_reports_save, str(report.id)))
 
     print(f"Successed label data for {reports_success} reports.")
 
@@ -91,7 +91,7 @@ def label_reports(issues_info: pd.DataFrame, path_to_reports: str, path_to_repor
 def match_reports_to_labels(raw_reports_path: str, data_dir: str = '../../data'):
     path_to_reports = os.path.join(raw_reports_path, "reports")
     reports_save_path = os.path.join(data_dir, REPORTS_INTERMEDIATE_DIR)
-    os.makedirs(reports_save_path)
+    os.makedirs(reports_save_path, exist_ok=True)
     issues_info = collect_info(raw_reports_path, data_dir)
     label_reports(issues_info, path_to_reports, reports_save_path)
 

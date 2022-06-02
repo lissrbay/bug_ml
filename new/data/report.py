@@ -30,7 +30,8 @@ class Report:
                 'method_name': frame['method_name'],
                 'file_name': frame['file_name'],
                 'line': frame['line_number'],
-                'path': ''
+                'path': '',
+                'has_recursion': 0 if not('has_recursion' in frame) else frame['has_recursion']
             }
             if 'label' in frame:
                 method_meta['label'] = frame['label']

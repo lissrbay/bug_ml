@@ -1,14 +1,17 @@
 import re
+from dataclasses import dataclass
 from typing import List, Tuple, Optional
 
 import attr
 
+from new.data_aggregation.utils import MethodSignature
 
-@attr.s(eq=False)
+
+@dataclass(frozen=True)
 class Scope:
-    name: str = attr.attrib()
-    bounds: Tuple[int, int] = attr.attrib()
-    type: str = attr.attrib()
+    name: Optional[str] = None  # attr.attrib()
+    bounds: Optional[Tuple[int, int]] = None  # attr.attrib()
+    type: Optional[str] = None  # attr.attrib()
 
 
 class AST:
@@ -25,33 +28,24 @@ class AST:
         s += ")"
         return s
 
-    def get_method_names_and_bounds(self) -> List[Scope]:
-        paths = self.paths()
-        method_names_and_bounds = set()
-        for path in paths:
-            full_name = ''
-            for scope in path:
-                full_name += scope.name
-                if scope.type in ['method', 'constructor', 'static_init']:
-                    method_names_and_bounds.add(Scope(full_name, scope.bounds, scope.type))
-                full_name += ': '
-        return list(method_names_and_bounds)
+    def get_method_names_and_bounds(self):
+        paths = self.paths(self, self.label + '::', [])
+        method_names_and_bounds = dict()
+        for scope in paths:
+            if scope.type in ['method', 'constructor', 'static_init']:
+                method_names_and_bounds[MethodSignature(scope.name, scope.type)] = scope
+        return method_names_and_bounds
 
     def paths(
             self,
-            node: 'AST' = None,
-            path: List[Scope] = None
+            node: 'AST',
+            prefix: str,
+            paths: List[Scope]
     ) -> List[List[Scope]]:
-        node = node or self
-        path = path or []
-        paths = []
-        if node.type != 'code':
-            path.append(Scope(name=node.label, bounds=node.bounds, type=node.type))
-        if node.children:
-            for child in node.children:
-                paths.extend(self.paths(child, path))
-        else:
-            paths.append(path)
+        for child in node.children:
+            if child.type != 'code':
+                paths.extend(self.paths(child, prefix + child.label + '::', [Scope(name=prefix + '::' + child.label, bounds=child.bounds, type=child.type)]))
+
         return paths
 
 
@@ -60,13 +54,13 @@ class Parser:
         'pattern_method_name': re.compile(
             '(?:override|internal|public|private|protected|static|final|native|synchronized|abstract|transient)* *(fun)+[$_\w<>\[\]\s]*\s+[\$_\w]+\([^\)]*\)?\s*?'),
         'pattern_constructor_name': re.compile("(init|constructor)+ *(\([^\)]*\))?"),
-        'pattern_class': re.compile("(?:open|public|protected|private|static)? *(?:class|object|interface)\s+\w+"),
+        'pattern_class': re.compile("(?:open|public|protected|private|static|data)? *(?:class|object|interface)\s+\w+"),
         'pattern_static': re.compile("(companion object ) *\{")}
     java_patterns = {
         'pattern_method_name': re.compile(
-            '(?:(?:public|private|protected|static|final|native|synchronized|abstract|transient)+\s+)+[$_@\w<>\[\]\s]*\s+[\$_\w]+\([^\)]*\)?\s*?'),
+            '(?:(?:public|private|protected|static|final|native|synchronized|abstract|transient)+\s+)+[_@\w<>\[\]\s+,\?]*[\$_\w]+\([^\)]*\)?\s*'),
         'pattern_constructor_name': re.compile("(?:public|protected|private|static) *\w+\([^\)]*\)+"),
-        'pattern_class': re.compile("(?:public|protected|private|static)? *(?:class|interface)\s+\w+\s"),
+        'pattern_class': re.compile("(?:public|protected|private|static)? *(abstract +)?(?:class|interface)\s+\w+"),
         'pattern_static': re.compile("(static)\s+\{")}
     declaration_patterns = []
 
@@ -163,7 +157,8 @@ class Parser:
         self.labels = all_declarations  # TODO: return it w/o state
 
     @staticmethod
-    def find_declarations_by_pattern(pattern: re.Pattern, code: str, declaration_type: str) -> List[Tuple[str, str, int]]:
+    def find_declarations_by_pattern(pattern: re.Pattern, code: str, declaration_type: str) -> List[
+        Tuple[str, str, int]]:
         declarations = [(m.group(0), declaration_type, m.end(0)) for m in re.finditer(pattern, code)]
         if declaration_type == "method":
             declarations = [(i[0].split('(')[0], i[1], i[2]) for i in declarations]
