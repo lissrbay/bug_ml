@@ -51,7 +51,6 @@ def save_fixed_methods(data_dir: str, issue2commit: Dict[str, str],
             if commit in commit_changed_methods:
                 changed_methods = commit_changed_methods[commit]
                 if changed_methods:
-                    print(changed_methods)
                     methods.extend(
                         [{"path": method[0], "name": method[1]} for method in parse_method_signature(changed_methods)])
         info[issue_id] = {"hash": commits[0], "fixed_methods": methods}
