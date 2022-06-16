@@ -3,6 +3,7 @@ REPO_CHANGED_METHODS_FILE = "fixed_methods.json"
 REPO_COMMIT_INFO_FILE = "commit_fix_hashes.txt"
 REPORTS_INTERMEDIATE_DIR = "labeled_reports"
 FINAL_REPORTS_DIR = "final_labeled_reports"
+SCAFFLE_REPORTS_DIR = "scaffle_reports"
 
 EMBEDDING_DIM = 320
 EMBEDDING_TMP_FILE = '_tmp.java'
