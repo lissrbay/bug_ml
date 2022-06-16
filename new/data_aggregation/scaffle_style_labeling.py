@@ -1,5 +1,6 @@
 import json
 from argparse import ArgumentParser
+from typing import Set
 
 from new.data_aggregation.utils import iterate_reports
 import os
@@ -18,7 +19,7 @@ def get_method_tokens(path: str, method_name: str):
     return method_tokens
 
 
-def frame_label(frame, fixed_methods):
+def frame_label(frame: Frame, fixed_methods: Set[str]) -> int:
     method_tokens = get_method_tokens(frame.meta['path'], frame.meta['method_name'])
     return len(fixed_methods.intersection(method_tokens))/len(fixed_methods) if len(fixed_methods) > 0 else 0
 
@@ -35,11 +36,11 @@ def label_frames(report: Report, methods_info: pd.DataFrame) -> Report:
     return Report(report.id, report.exceptions, report.hash, frames_with_labels)
 
 
-def tokenize(s):
+def tokenize(s: str) -> str:
     return re.split('/|\.', s)
 
 
-def match_fixed_methods_tokens(path_to_reports: str, data_dir: str):
+def match_fixed_methods_tokens(path_to_reports: str, data_dir: str) -> pd.DataFrame:
     issues, method_names = [], []
 
     with open(os.path.join(data_dir, REPO_CHANGED_METHODS_FILE), "r") as fixed_methods_io:
