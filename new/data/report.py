@@ -28,15 +28,17 @@ class Report:
         for frame in base_report['frames']:
             method_meta = {
                 'method_name': frame['method_name'],
-                'file_name': frame['file_name'],
+                'file_name': '' if frame['file_name'] is None else frame['file_name'],
                 'line': frame['line_number'],
                 'path': '',
+                'label': 0,
+                'file_path': '',
                 'has_recursion': 0 if not('has_recursion' in frame) else frame['has_recursion']
             }
             if 'label' in frame:
                 method_meta['label'] = frame['label']
 
-            if 'file_path' in frame:
+            if 'file_path' in frame and frame['file_path'] is not None:
                 method_meta['file_path'] = frame['file_path']
 
             new_frame = Frame('', method_meta)

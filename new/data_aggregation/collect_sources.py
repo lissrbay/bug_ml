@@ -22,7 +22,7 @@ def remove_unused_begin(code: str) -> str:
 
 def get_file_by_commit(repo: Repo, commit: str, diff_file: str) -> str:
     code = repo.git.show('{}:{}'.format(commit, diff_file))
-    return remove_unused_begin(code)
+    return code
 
 
 def get_sources_for_report(repo: Repo, report: Report, commit: str, file_limit: int) -> Report:
@@ -37,6 +37,8 @@ def get_sources_for_report(repo: Repo, report: Report, commit: str, file_limit: 
                 frames_with_codes.append(Frame(frame_code, frame.meta))
             except Exception:
                 print(report.id, frame.meta['file_name'])
+        else:
+            frames_with_codes.append(frame)
 
     return Report(report.id, report.exceptions, report.hash, frames_with_codes)
 

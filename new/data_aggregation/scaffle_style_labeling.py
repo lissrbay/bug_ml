@@ -1,6 +1,6 @@
 import json
 from argparse import ArgumentParser
-from typing import Set
+from typing import Set, List
 
 from new.data_aggregation.utils import iterate_reports
 import os
@@ -13,15 +13,24 @@ import pandas as pd
 
 def get_method_tokens(path: str, method_name: str):
     method_name = clean_method_name(method_name)
+    method_name_tokens = tokenize(method_name)
+
     file_name = tokenize(path)
     method_tokens = set(file_name)
-    method_tokens.add(method_name)
+    if len(method_name) > 0:
+        method_tokens.update(set(method_name_tokens))
     return method_tokens
 
 
-def frame_label(frame: Frame, fixed_methods: Set[str]) -> int:
+def frame_label(frame: Frame, fixed_methods: List[Set[str]]) -> int:
     method_tokens = get_method_tokens(frame.meta['path'], frame.meta['method_name'])
-    return len(fixed_methods.intersection(method_tokens))/len(fixed_methods) if len(fixed_methods) > 0 else 0
+    max_s = 0.0
+    for fixed_path in fixed_methods:
+        s = len(fixed_path.intersection(method_tokens))/len(fixed_path) if len(fixed_path) > 0 else 0
+        if s > max_s:
+            max_s = s
+
+    return max_s
 
 
 def label_frames(report: Report, methods_info: pd.DataFrame) -> Report:
@@ -31,6 +40,7 @@ def label_frames(report: Report, methods_info: pd.DataFrame) -> Report:
     for frame in report.frames:
         label = frame_label(frame, fixed_methods)
         frame_meta = frame.meta
+        frame_meta['ground_truth'] = frame.meta['label']
         frame_meta['label'] = label
         frames_with_labels.append(Frame(frame.code, frame_meta))
     return Report(report.id, report.exceptions, report.hash, frames_with_labels)
@@ -47,10 +57,10 @@ def match_fixed_methods_tokens(path_to_reports: str, data_dir: str) -> pd.DataFr
         fixed_methods = json.load(fixed_methods_io)
         for issue, info in fixed_methods.items():
             issues.append(int(issue))
-            issue_fixed_methods = set()
+            issue_fixed_methods = []
             for changed_method_info in info['fixed_methods']:
-                method_tokens = get_method_tokens(changed_method_info['path'], changed_method_info['name'])
-                issue_fixed_methods.update(method_tokens)
+                method_tokens = get_method_tokens(changed_method_info['path'], '')
+                issue_fixed_methods.append(method_tokens)
             method_names.append(issue_fixed_methods)
 
     issues_reports = pd.read_csv(os.path.join(path_to_reports, ISSUE_REPORTS_MAPPING_FILE))
@@ -70,7 +80,6 @@ def scaffle_labeling(path_to_reports: str, data_dir: str):
         report_success = 0
         path_to_file = os.path.join(path_to_reports, file_name)
         report = Report.load_report(path_to_file)
-
         fixed_methods = issues_info[issues_info['report_id'] == report.id]
         if fixed_methods.shape[0] > 0:
             report = label_frames(report, fixed_methods)
