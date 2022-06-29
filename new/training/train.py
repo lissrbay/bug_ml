@@ -2,10 +2,12 @@ import argparse
 import json
 import logging
 import os
+import random
 import sys
 from multiprocessing import Pool
 from typing import List, Tuple, Optional, cast
 
+import numpy.random
 import torch
 from code2seq.model import Code2Seq
 from omegaconf import DictConfig, OmegaConf
@@ -56,6 +58,10 @@ def make_target(reports: List[Report]) -> List[List[int]]:
 
 
 def train(reports_path: str, save_path: str, model_name: Optional[str]):
+    torch.manual_seed(1234)
+    numpy.random.seed(1234)
+    random.seed(1234)
+
     reports = []
     for file_name in iterate_reports(reports_path):
         report_path = os.path.join(reports_path, file_name)
@@ -114,9 +120,20 @@ def train(reports_path: str, save_path: str, model_name: Optional[str]):
         else:
             raise ValueError(f"Wrong model type. Should be in {model_names}")
     else:
-
+        # pass
         encoder = RobertaReportEncoder(frames_count=config["training"]["max_len"], device='cuda')
+                                        # path_to_precomputed_embs="/home/lissrbay/Загрузки/code2seq_embs"),
+                                        # GitFeaturesTransformer(
+                                        #    frames_count=config["training"]["max_len"]).fit(reports, target),
+                                        # MetadataFeaturesTransformer(frames_count=config["training"]["max_len"])
 
+        # for param in encoder.model.parameters():
+        #     param.requires_grad = True
+
+        # for name, param in encoder.model.named_parameters():
+        #     if "11" in name or "10" in name:
+        #         param.requires_grad = True
+        
         tagger = LstmTagger(
             encoder,
             max_len=config["training"]["max_len"],
@@ -124,7 +141,7 @@ def train(reports_path: str, save_path: str, model_name: Optional[str]):
             hidden_dim=250
         )
 
-    tagger = train_lstm_tagger(tagger, reports, target, **config["training"])
+    tagger = train_lstm_tagger(tagger, reports, target, cpkt_path = "/home/dumtrii/Documents/practos/spring2/bug_ml/new/training/lightning_logs/version_290/checkpoints/epoch=35-step=13247.ckpt", **config["training"])
 
     return tagger
 
