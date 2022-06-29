@@ -29,13 +29,14 @@ def get_label_scores(crf: CRF, emissions: torch.Tensor, labels: torch.Tensor, ma
 
 class LstmTagger(BlamedTagger, nn.Module):
     def __init__(self, report_encoder: ReportEncoder, hidden_dim: int, max_len: int, layers_num: int = 1,
-                 with_crf: bool = False, with_attention: bool = False, device: str = "cuda"):
+                 with_crf: bool = False, with_attention: bool = False, scaffle: bool = False, device: str = "cuda"):
         super().__init__()
         self.report_encoder = report_encoder
         self.hidden_dim = hidden_dim
         self.layers_num = layers_num
         self.with_crf = with_crf
         self.with_attention = with_attention
+        self.scaffle = scaffle
         self.max_len = max_len
         self.device = device
 
@@ -50,12 +51,18 @@ class LstmTagger(BlamedTagger, nn.Module):
             self.attention = DeepAnalyzeAttention(2 * self.hidden_dim, 2, max_len)
             self.lstm_dropout = nn.Dropout(0.25)
 
+        if scaffle:
+            self.scaffle_final = nn.Linear(2 * self.hidden_dim, max_len)
+
     def calc_emissions(self, report: Report, mask: torch.Tensor) -> torch.Tensor:
         features = self.report_encoder.encode_report(report).to(self.device)
         features = features[:self.max_len]
         features = pad(features, (0, 0, 0, self.max_len - features.shape[0])).unsqueeze(1)
         embeddings = features * mask.unsqueeze(-1)
         res, _ = self.lstm(embeddings)
+
+        if self.scaffle:
+            return torch.sigmoid(self.scaffle_final(res[-1, :, :]).permute(1, 0))
 
         if self.with_attention:
             # res = self.lstm_dropout(res)

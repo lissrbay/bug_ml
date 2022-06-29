@@ -52,15 +52,15 @@ def read_reports(reports_path: str) -> Tuple[List[Report], List[List[int]]]:
 def make_target(reports: List[Report]) -> List[List[int]]:
     targets = []
     for report in reports:
-        target = [frame.meta["label"] for frame in report.frames]
+        target = [frame.meta["ground_truth"] for frame in report.frames]
         targets.append(target)
     return targets
 
 
 def train(reports_path: str, save_path: str, model_name: Optional[str]):
-    torch.manual_seed(1234)
-    numpy.random.seed(1234)
-    random.seed(1234)
+    torch.manual_seed(9219321)
+    numpy.random.seed(9219321)
+    random.seed(9219321)
 
     reports = []
     for file_name in iterate_reports(reports_path):
@@ -85,6 +85,7 @@ def train(reports_path: str, save_path: str, model_name: Optional[str]):
             tagger = LstmTagger(
                 encoder,
                 max_len=config["training"]["max_len"],
+                scaffle=True,
                 **config["models"]["scuffle"]["tagger"]
             )
         elif model_name == "deep_analyze":
@@ -141,7 +142,9 @@ def train(reports_path: str, save_path: str, model_name: Optional[str]):
             hidden_dim=250
         )
 
-    tagger = train_lstm_tagger(tagger, reports, target, cpkt_path = "/home/dumtrii/Documents/practos/spring2/bug_ml/new/training/lightning_logs/version_290/checkpoints/epoch=35-step=13247.ckpt", **config["training"])
+    # tagger = train_lstm_tagger(tagger, reports, target, cpkt_path = "/home/dumtrii/Documents/practos/spring2/bug_ml/new/training/lightning_logs/version_316/checkpoints/epoch=46-step=28105.ckpt", **config["training"])
+
+    tagger = train_lstm_tagger(tagger, reports, target, cpkt_path=None, **config["training"])
 
     return tagger
 
@@ -153,7 +156,7 @@ def main():
     parser.add_argument("--model", type=str, default=None)
     args = parser.parse_args()
 
-    train(args.reports_path, args.save_path, None)
+    train(args.reports_path, args.save_path, "scuffle")
 
 
 if __name__ == '__main__':

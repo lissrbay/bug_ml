@@ -21,7 +21,7 @@ class ReportsDataModule(pl.LightningDataModule):
 
     def setup(self, stage: Optional[str] = None):
         self.rtrain, self.rval = train_test_split(ReportsDataset(
-            self.reports, self.targets, self.max_len), test_size=0.2, shuffle=True)
+            self.reports, self.targets, self.max_len), test_size=0.2, shuffle=False)
 
     def train_dataloader(self) -> DataLoader:
         return DataLoader(self.rtrain, self.batch_size, collate_fn=report_collate, num_workers=12, shuffle=True)
@@ -52,11 +52,11 @@ class ReportsDataset(Dataset):
     def __getitem__(self, index):
         report, target = self.reports[index], self.targets[index]
         report = attr.evolve(report, frames=report.frames[:self.max_len])
-        target = torch.LongTensor(target[:self.max_len])
+        target = torch.FloatTensor(target[:self.max_len])
 
         length = len(report.frames)
 
-        target = pad(target, (0, self.max_len - length), value=2).unsqueeze(1)
+        target = pad(target, (0, self.max_len - length)).unsqueeze(1)
 
         mask = (torch.arange(self.max_len) < length).unsqueeze(1)
         mask = mask * (target != 2)

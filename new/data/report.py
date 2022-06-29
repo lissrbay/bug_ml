@@ -12,6 +12,10 @@ class Code:
 
 import attr
 
+import sys
+from new import data
+
+sys.modules['data'] = data
 
 @attr.s(frozen=True, auto_attribs=True)
 class Frame:
