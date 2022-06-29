@@ -5,31 +5,7 @@ from torch import Tensor
 from transformers import RobertaTokenizer, RobertaModel
 
 from new.data.report import Report
-from new.data_aggregation.parser_java_kotlin import Parser
 from new.model.report_encoders.report_encoder import ReportEncoder
-
-
-def remove_tabs(code):
-    # code = list(filter(lambda x: not (x.strip()[:2] == '//'), code))
-    # code = '\n'.join(code)
-    code = re.sub(' +', ' ', code)
-    return re.sub('\t+', '', code)
-
-
-def code_fragment(bounds, code):
-    if not bounds:
-        return ''
-    if bounds[1] <= bounds[0]:
-        return ''
-    return ''.join(code)[bounds[0]: bounds[1]]
-
-
-def clean_method_name(method_name):
-    method_name = method_name.split('.')[-1]
-    method_name = method_name.replace('lambda$', '')
-    method_name = method_name.replace('$0', '')
-    method_name = method_name.replace('$', '')
-    return method_name
 
 
 class RobertaReportEncoder(ReportEncoder):
@@ -43,19 +19,7 @@ class RobertaReportEncoder(ReportEncoder):
         self.device = kwargs['device'] if 'device' in kwargs else 'cpu'
         self.model.to(self.device)
 
-    def extract_method_code(self, code, method_name):
-        parser = Parser()
-        txt = remove_tabs(code)
-        ast = parser.parse(txt)
-        method_info = ast.get_method_names_and_bounds()
-        code = ''
-        for name, bounds in method_info:
-            name_ = name.split(':')[-1]
-            if method_name in name:
-                method_code = code_fragment(bounds[0], txt)
-                code = name_ + method_code
 
-        return code
 
     def encode_report(self, report: Report) -> Tensor:
         report_embs = []

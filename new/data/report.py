@@ -2,17 +2,24 @@ import base64
 import json
 import pickle
 from typing import List, Dict
+from dataclasses import dataclass
+
+@dataclass
+class Code:
+    begin: int
+    end: int
+    code: str
 
 import attr
 
 
 @attr.s(frozen=True, auto_attribs=True)
 class Frame:
-    code: str
+    code: Code
     meta: Dict
 
     def get_code_decoded(self):
-        return base64.b64decode(self.code).decode("UTF-8")
+        return base64.b64decode(self.code.code).decode("UTF-8")
 
 
 @attr.s(frozen=True, auto_attribs=True)
@@ -41,7 +48,7 @@ class Report:
             if 'file_path' in frame and frame['file_path'] is not None:
                 method_meta['file_path'] = frame['file_path']
 
-            new_frame = Frame('', method_meta)
+            new_frame = Frame(Code(0, 0, ''), method_meta)
             frames.append(new_frame)
 
         return frames

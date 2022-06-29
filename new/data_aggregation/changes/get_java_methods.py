@@ -5,12 +5,10 @@ import re
 from dataclasses import dataclass
 from typing import Tuple, List, Optional, Set
 
-import attr
 from git import Repo, db
 
 from new.constants import MAX_DIFF_FILES
 from new.data_aggregation.changes.parser_java_kotlin import Parser, AST
-import attrs
 
 from new.data_aggregation.utils import parse_method_signature, MethodSignature
 
@@ -44,15 +42,6 @@ def collect_modified_files_last_two_commits(repo: Repo, commits: Tuple[str, str]
     return diff_files
 
 
-def remove_tabs_and_comments(source_code: str) -> str:
-    lines = source_code.split("\n")
-    lines = filter(lambda line: not line.strip().startswith("//"), lines)  # Remove comments
-    source_code = "\n".join(lines)
-    source_code = re.sub(" +", " ", source_code)
-    source_code = re.sub("\t+", "", source_code)
-    return source_code.strip()
-
-
 def cut_part(code: str, bounds: Optional[Tuple[int, int]]) -> str:
     if bounds is None:
         return ""
@@ -61,7 +50,7 @@ def cut_part(code: str, bounds: Optional[Tuple[int, int]]) -> str:
     if end_pos <= start_pos:
         return ""
 
-    part = remove_tabs_and_comments("".join(code)[start_pos:end_pos])
+    part = "".join(code)[start_pos:end_pos]
     return part
 
 
@@ -99,7 +88,7 @@ def compare_ast(ast_a: AST, code_a: str, ast_b: AST, code_b: str) -> Set[MethodS
 def get_code(repo: Repo, diff_file: str, commit: str) -> Optional[str]:
     try:
         code = repo.git.show(f"{commit}:{diff_file}")
-        return remove_tabs_and_comments(code)
+        return code
     except Exception as e:
         pass
 

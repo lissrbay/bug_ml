@@ -2,8 +2,6 @@ import re
 from dataclasses import dataclass
 from typing import List, Tuple, Optional
 
-import attr
-
 from new.data_aggregation.utils import MethodSignature
 
 
