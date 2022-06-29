@@ -52,7 +52,7 @@ def read_reports(reports_path: str) -> Tuple[List[Report], List[List[int]]]:
 def make_target(reports: List[Report]) -> List[List[int]]:
     targets = []
     for report in reports:
-        target = [frame.meta["ground_truth"] for frame in report.frames]
+        target = [frame.meta["label"] for frame in report.frames]
         targets.append(target)
     return targets
 
