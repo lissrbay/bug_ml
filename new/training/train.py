@@ -19,7 +19,6 @@ from new.data_aggregation.utils import iterate_reports
 from new.model.lstm_tagger import LstmTagger
 from new.model.report_encoders.code2seq_report_encoder import Code2SeqReportEncoder
 from new.model.report_encoders.codebert_encoder import RobertaReportEncoder
-from new.model.report_encoders.concat_encoders import ConcatReportEncoders
 from new.model.report_encoders.scuffle_report_encoder import ScuffleReportEncoder
 from new.model.report_encoders.tfidf import TfIdfReportEncoder
 from new.training.torch_training import train_lstm_tagger
@@ -134,7 +133,7 @@ def train(reports_path: str, save_path: str, model_name: Optional[str]):
         # for name, param in encoder.model.named_parameters():
         #     if "11" in name or "10" in name:
         #         param.requires_grad = True
-
+        
         tagger = LstmTagger(
             encoder,
             max_len=config["training"]["max_len"],
