@@ -89,13 +89,13 @@ class TrainingModule(pl.LightningModule):
         if self.tagger.with_crf:
             emissions = torch.cat([self.tagger.calc_emissions(report, mask) for report, mask in zip(reports, masks)],
                                   dim=1)
-            loss = -self.tagger.crf(emissions, target, mask)
+            loss = -self.tagger.crf(emissions, target.long(), mask)
         else:
             scores = self.tagger.forward(reports, masks)
             if self.tagger.scaffle:
                 loss = self.mseloss(scores, target.float())
             else:
-                loss = self.celoss(scores, target)
+                loss = self.celoss(scores, target.long())
 
         with torch.no_grad():
             scores = self.tagger.forward(reports, masks)
@@ -111,6 +111,7 @@ class TrainingModule(pl.LightningModule):
             scores = self.softmax(scores)
 
         if self.tagger.scaffle:
+            # target = (target >= 1).long()
             target = self.build_scaffle_labels(reports, target)
 
         self.val_metrics.update(preds, target, mask, scores=scores)
@@ -129,7 +130,7 @@ class TrainingModule(pl.LightningModule):
         self.train_metrics.reset()
 
     def configure_optimizers(self):
-        return Adam(self.parameters(), lr=5e-6)
+        return Adam(self.parameters(), lr=3e-4)
 
 
 def train_lstm_tagger(tagger: LstmTagger, reports: List[Report], target: List[List[int]], batch_size: int,

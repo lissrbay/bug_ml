@@ -59,7 +59,7 @@ class ScuffleReportEncoder(ReportEncoder, nn.Module):
         sentences = [list(tokenize_frame(clean_method_name(frame.meta['method_name'])))
                      for report in reports for frame in report.frames[:self.max_len]]
         self.word2vec.build_vocab(sentences, progress_per=1000)
-        self.word2vec.train(sentences, total_examples=len(sentences), epochs=30, report_delay=1)
+        self.word2vec.train(sentences, total_examples=len(sentences), epochs=100, report_delay=1)
         return self
 
     @property
