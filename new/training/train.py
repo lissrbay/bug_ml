@@ -39,7 +39,8 @@ def make_target(reports: List[Report], label_style: Optional[str]) -> List[List[
     return targets
 
 
-def train(reports_path: str, save_path: str, model_name: Optional[str], caching: bool = False, checkpoint_path: Optional[str] = None):
+def train(reports_path: str, save_path: str, model_name: Optional[str], caching: bool = False,
+          checkpoint_path: Optional[str] = None):
     torch.manual_seed(9219321)
     numpy.random.seed(9219321)
     random.seed(9219321)
@@ -123,7 +124,8 @@ def train(reports_path: str, save_path: str, model_name: Optional[str], caching:
             hidden_dim=250
         )
 
-    tagger = train_lstm_tagger(tagger, reports, target, label_style=model_name, cpkt_path=checkpoint_path, **config["training"])
+    tagger = train_lstm_tagger(tagger, reports, target, caching=caching, label_style=model_name,
+                               cpkt_path=checkpoint_path, **config["training"])
 
     return tagger
 

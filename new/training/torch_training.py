@@ -125,7 +125,7 @@ class TrainingModule(pl.LightningModule):
 
 
 def train_lstm_tagger(tagger: LstmTagger, reports: List[Report], target: List[List[int]], batch_size: int,
-                      max_len: int, label_style: Optional[str], lr: float,
+                      max_len: int, label_style: Optional[str], lr: float, caching: bool = False,
                       cpkt_path: Optional[str] = None) -> LstmTagger:
     datamodule = ReportsDataModule(reports, target, batch_size, max_len, label_style)
     model = TrainingModule(tagger, lr)
@@ -136,11 +136,11 @@ def train_lstm_tagger(tagger: LstmTagger, reports: List[Report], target: List[Li
         for param in model.tagger.report_encoder.model.parameters():
             param.requires_grad = True
 
-        model.tagger.report_encoder.model.gradient_checkpointing_enable()
-
-        trainer = Trainer(gpus=1, callbacks=[ZeroCallback()])
-    else:
+    if caching:
         trainer = Trainer(gpus=1)
+    else:
+        model.tagger.report_encoder.model.gradient_checkpointing_enable()
+        trainer = Trainer(gpus=1, callbacks=[ZeroCallback()])
     trainer.validate(model, datamodule)
     trainer.fit(model, datamodule)
     return tagger
