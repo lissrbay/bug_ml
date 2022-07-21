@@ -106,7 +106,11 @@ def train(reports_path: str, save_path: str, model_name: Optional[str], caching:
             raise ValueError(f"Wrong model type. Should be in {model_names}")
     else:
         # pass
-        encoder = RobertaReportEncoder(frames_count=config["training"]["max_len"], device='cuda')
+        encoder = RobertaReportEncoder(caching=caching, frames_count=config["training"]["max_len"], device='cuda')
+        if caching:
+            for param in encoder.model.parameters():
+                param.requires_grad = False
+
         # path_to_precomputed_embs="/home/lissrbay/Загрузки/code2seq_embs"),
         # GitFeaturesTransformer(
         #    frames_count=config["training"]["max_len"]).fit(reports, target),
