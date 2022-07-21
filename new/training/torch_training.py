@@ -136,7 +136,9 @@ def train_lstm_tagger(tagger: LstmTagger, reports: List[Report], target: List[Li
         for param in model.tagger.report_encoder.model.parameters():
             param.requires_grad = True
 
-    if caching:
+    if label_style is not None:
+        trainer = Trainer(gpus=1)
+    elif caching:
         trainer = Trainer(gpus=1)
     else:
         model.tagger.report_encoder.model.gradient_checkpointing_enable()
