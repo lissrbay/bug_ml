@@ -137,7 +137,7 @@ def main():
 
     # train(args.reports_path, args.save_path, "scaffle")
     train(args.reports_path, args.save_path, None, caching=True)
-    # train(args.reports_path, args.save_path, None, checkpoint_path="<path to .cpkt")
+    # train(args.reports_path, args.save_path, None, checkpoint_path="<path to .cpkt>")
 
 
 if __name__ == '__main__':
