@@ -4,14 +4,12 @@ import logging
 import os
 import random
 import sys
-from multiprocessing import Pool
-from typing import List, Tuple, Optional, cast
+from typing import List, Optional, cast
 
 import numpy.random
 import torch
 from code2seq.model import Code2Seq
 from omegaconf import DictConfig, OmegaConf
-from tqdm import tqdm
 
 from new.data.labeled_path_context_storage import LabeledPathContextStorage
 from new.data.report import Report
@@ -19,7 +17,7 @@ from new.data_aggregation.utils import iterate_reports
 from new.model.lstm_tagger import LstmTagger
 from new.model.report_encoders.code2seq_report_encoder import Code2SeqReportEncoder
 from new.model.report_encoders.codebert_encoder import RobertaReportEncoder
-from new.model.report_encoders.scuffle_report_encoder import ScuffleReportEncoder
+from new.model.report_encoders.scaffle_report_encoder import ScaffleReportEncoder
 from new.model.report_encoders.tfidf import TfIdfReportEncoder
 from new.training.torch_training import train_lstm_tagger
 
@@ -30,34 +28,18 @@ loger.info(...)
 loger.debug(...)
 
 
-def read_report(report_path: str) -> Tuple[Report, List[int]]:
-    report = Report.load_report(report_path)
-    target = [frame.meta["label"] for frame in report.frames]
-
-    return report, target
-
-
-def read_reports(reports_path: str) -> Tuple[List[Report], List[List[int]]]:
-    reports, targets = [], []
-    # reports_path = Path(reports_path)
-    pool = Pool()
-
-    for report, target in pool.imap(read_report, tqdm(list(iterate_reports(reports_path)))):
-        if sum(target) > 0:
-            reports.append(report)
-            targets.append(target)
-    return reports, targets
-
-
-def make_target(reports: List[Report]) -> List[List[int]]:
+def make_target(reports: List[Report], label_style: Optional[str]) -> List[List[int]]:
     targets = []
     for report in reports:
-        target = [frame.meta["label"] for frame in report.frames]
+        if label_style == "scaffle":
+            target = [frame.meta["label"] for frame in report.frames]
+        else:
+            target = [frame.meta["ground_truth"] for frame in report.frames]
         targets.append(target)
     return targets
 
 
-def train(reports_path: str, save_path: str, model_name: Optional[str]):
+def train(reports_path: str, save_path: str, model_name: Optional[str], caching: bool = False, checkpoint_path: Optional[str] = None):
     torch.manual_seed(9219321)
     numpy.random.seed(9219321)
     random.seed(9219321)
@@ -72,22 +54,23 @@ def train(reports_path: str, save_path: str, model_name: Optional[str]):
 
     reports = reports
 
-    target = make_target(reports)
+    target = make_target(reports, model_name)
 
     with open("config.json", "r") as f:
         config = json.load(f)
 
-    model_names = ["scuffle", "deep_analyze", "code2seq"]
+    model_names = ["scaffle", "deep_analyze", "code2seq"]
 
     if model_name is not None:
-        if model_name == "scuffle":
-            encoder = ScuffleReportEncoder(**config["models"]["scuffle"]["encoder"]).fit(reports, target)
+        if model_name == "scaffle":
+            encoder = ScaffleReportEncoder(**config["models"]["scaffle"]["encoder"]).fit(reports, target)
             tagger = LstmTagger(
                 encoder,
                 max_len=config["training"]["max_len"],
                 scaffle=True,
-                **config["models"]["scuffle"]["tagger"]
+                **config["models"]["scaffle"]["tagger"]
             )
+            config["training"]["lr"] = config["models"]["scaffle"]["lr"]
         elif model_name == "deep_analyze":
             encoder = TfIdfReportEncoder(**config["models"]["deep_analyze"]["encoder"]).fit(reports, target)
             tagger = LstmTagger(
@@ -95,6 +78,7 @@ def train(reports_path: str, save_path: str, model_name: Optional[str]):
                 max_len=config["training"]["max_len"],
                 **config["models"]["deep_analyze"]["tagger"]
             )
+            config["training"]["lr"] = config["models"]["deep_analyze"]["lr"]
         elif model_name == "code2seq":
             config_path = config["code2seq_config_path"]
             cli_path = config["astminer_config_path"]
@@ -123,18 +107,11 @@ def train(reports_path: str, save_path: str, model_name: Optional[str]):
     else:
         # pass
         encoder = RobertaReportEncoder(frames_count=config["training"]["max_len"], device='cuda')
-                                        # path_to_precomputed_embs="/home/lissrbay/Загрузки/code2seq_embs"),
-                                        # GitFeaturesTransformer(
-                                        #    frames_count=config["training"]["max_len"]).fit(reports, target),
-                                        # MetadataFeaturesTransformer(frames_count=config["training"]["max_len"])
+        # path_to_precomputed_embs="/home/lissrbay/Загрузки/code2seq_embs"),
+        # GitFeaturesTransformer(
+        #    frames_count=config["training"]["max_len"]).fit(reports, target),
+        # MetadataFeaturesTransformer(frames_count=config["training"]["max_len"])
 
-        # for param in encoder.model.parameters():
-        #     param.requires_grad = True
-
-        # for name, param in encoder.model.named_parameters():
-        #     if "11" in name or "10" in name:
-        #         param.requires_grad = True
-        
         tagger = LstmTagger(
             encoder,
             max_len=config["training"]["max_len"],
@@ -142,9 +119,7 @@ def train(reports_path: str, save_path: str, model_name: Optional[str]):
             hidden_dim=250
         )
 
-    # tagger = train_lstm_tagger(tagger, reports, target, cpkt_path = "/home/dumtrii/Documents/practos/spring2/bug_ml/new/training/lightning_logs/version_316/checkpoints/epoch=46-step=28105.ckpt", **config["training"])
-
-    tagger = train_lstm_tagger(tagger, reports, target, cpkt_path=None, **config["training"])
+    tagger = train_lstm_tagger(tagger, reports, target, label_style=model_name, cpkt_path=checkpoint_path, **config["training"])
 
     return tagger
 
@@ -156,7 +131,9 @@ def main():
     parser.add_argument("--model", type=str, default=None)
     args = parser.parse_args()
 
-    train(args.reports_path, args.save_path, "scuffle")
+    # train(args.reports_path, args.save_path, "scaffle")
+    train(args.reports_path, args.save_path, None, caching=True)
+    # train(args.reports_path, args.save_path, None, checkpoint_path="<path to .cpkt")
 
 
 if __name__ == '__main__':

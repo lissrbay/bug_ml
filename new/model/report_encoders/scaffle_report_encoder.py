@@ -21,7 +21,7 @@ def clean_method_name(method_name):
     return method_name
 
 
-class ScuffleReportEncoder(ReportEncoder, nn.Module):
+class ScaffleReportEncoder(ReportEncoder, nn.Module):
     def __init__(self, hidden_dim: int, word2vec_dim: int, max_len: int, device: str = "cuda"):
         super().__init__()
         self.hidden_dim = hidden_dim

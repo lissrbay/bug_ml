@@ -1,22 +1,20 @@
-import gc
 from typing import List, Any, Optional
 
 import pytorch_lightning as pl
 import torch
+from commode_utils.losses import SequenceCrossEntropyLoss
 from pytorch_lightning import Trainer
 from torch.optim import Adam
 from torchmetrics import MetricCollection
-# from transformers import Trainer, TrainingArguments
 
 from new.data.report import Report
 from new.model.lstm_tagger import LstmTagger
 from new.training.data import ReportsDataModule
 from new.training.metrics import Precision, Recall, TopkAccuracy
 
-from commode_utils.losses import SequenceCrossEntropyLoss
 
 class TrainingModule(pl.LightningModule):
-    def __init__(self, tagger: LstmTagger):
+    def __init__(self, tagger: LstmTagger, lr: float = 1e-5):
         super().__init__()
         self.tagger = tagger
 
@@ -26,6 +24,7 @@ class TrainingModule(pl.LightningModule):
         self.softmax = torch.nn.Softmax(dim=-1)
         self.mseloss = torch.nn.MSELoss()
         self.celoss = SequenceCrossEntropyLoss(reduction="batch-mean")
+        self.lr = lr
 
     def build_scaffle_labels(self, reports: List[Report], target: torch.Tensor):
         max_len = target.shape[0]
@@ -72,14 +71,6 @@ class TrainingModule(pl.LightningModule):
         self.train_metrics.update(preds, target, mask, scores=scores)
 
         self.log("train_loss", loss)
-
-        # with open('grad.log', "a") as f:
-        #     for name, para in self.tagger.report_encoder.model.named_parameters():
-        #         if 'layer.11.output.dense.weight' in name:
-        #             # print(str())
-        #             f.write(str(para))
-        #     f.write("\n\n")
-
 
         return loss
 
@@ -130,15 +121,14 @@ class TrainingModule(pl.LightningModule):
         self.train_metrics.reset()
 
     def configure_optimizers(self):
-        return Adam(self.parameters(), lr=3e-4)
+        return Adam(self.parameters(), lr=self.lr)
 
 
 def train_lstm_tagger(tagger: LstmTagger, reports: List[Report], target: List[List[int]], batch_size: int,
-                      max_len: int, cpkt_path: Optional[str] = None) -> LstmTagger:
-    datamodule = ReportsDataModule(reports, target, batch_size, max_len)
-    model = TrainingModule(tagger)
-    # for param in model.tagger.report_encoder.model.parameters():
-    #     param.requires_grad = False
+                      max_len: int, label_style: Optional[str], lr: float,
+                      cpkt_path: Optional[str] = None) -> LstmTagger:
+    datamodule = ReportsDataModule(reports, target, batch_size, max_len, label_style)
+    model = TrainingModule(tagger, lr)
 
     if cpkt_path:
         state_dict = torch.load(cpkt_path)["state_dict"]
@@ -146,24 +136,19 @@ def train_lstm_tagger(tagger: LstmTagger, reports: List[Report], target: List[Li
         for param in model.tagger.report_encoder.model.parameters():
             param.requires_grad = True
 
-        # with open('grad.log', "w") as f:
-        #     # for name, para in model.tagger.report_encoder.model.named_parameters():
-        #     #     if 'layer.11.output.LayerNorm.weight' in name:
-        #     #         f.write(para.requires_grad)
-        #     #         f.write(para)
-        #     f.write("")
-    # model.tagger.report_encoder.model.gradient_checkpointing_enable()
+        model.tagger.report_encoder.model.gradient_checkpointing_enable()
 
-    trainer = Trainer(gpus=1)
+        trainer = Trainer(gpus=1, callbacks=[ZeroCallback()])
+    else:
+        trainer = Trainer(gpus=1)
     trainer.validate(model, datamodule)
     trainer.fit(model, datamodule)
-
-
     return tagger
+
 
 class ZeroCallback(pl.Callback):
     def on_after_backward(self, trainer, pl_module):
-        layer_names = ["11", "10"  ]
+        layer_names = ["11", "10"]
         for name, param in pl_module.tagger.report_encoder.model.named_parameters():
             if all(x not in name for x in layer_names):
                 if param.grad is not None:

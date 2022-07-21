@@ -12,16 +12,18 @@ from new.data.report import Report
 
 
 class ReportsDataModule(pl.LightningDataModule):
-    def __init__(self, reports: List[Report], targets: List[List[int]], batch_size: int, max_len: int):
+    def __init__(self, reports: List[Report], targets: List[List[int]], batch_size: int, max_len: int,
+                 label_style: Optional[str]):
         super().__init__()
         self.reports = reports
         self.targets = targets
         self.batch_size = batch_size
         self.max_len = max_len
+        self.label_style = label_style
 
     def setup(self, stage: Optional[str] = None):
         self.rtrain, self.rval = train_test_split(ReportsDataset(
-            self.reports, self.targets, self.max_len), test_size=0.2, shuffle=False)
+            self.reports, self.targets, self.max_len, self.label_style), test_size=0.2, shuffle=False)
 
     def train_dataloader(self) -> DataLoader:
         return DataLoader(self.rtrain, self.batch_size, collate_fn=report_collate, num_workers=0, shuffle=True)
@@ -41,10 +43,11 @@ def report_collate(data):
 
 
 class ReportsDataset(Dataset):
-    def __init__(self, reports: List[Report], targets: List[List[int]], max_len: int):
+    def __init__(self, reports: List[Report], targets: List[List[int]], max_len: int, label_style: Optional[str]):
         self.reports = reports
         self.targets = targets
         self.max_len = max_len
+        self.label_style = label_style
 
     def __len__(self):
         return len(self.reports)
@@ -52,7 +55,10 @@ class ReportsDataset(Dataset):
     def __getitem__(self, index):
         report, target = self.reports[index], self.targets[index]
         report = attr.evolve(report, frames=report.frames[:self.max_len])
-        target = torch.FloatTensor(target[:self.max_len])
+        if self.label_style == "scaffle":
+            target = torch.FloatTensor(target[:self.max_len])
+        else:
+            target = torch.LongTensor(target[:self.max_len])
 
         length = len(report.frames)
 
