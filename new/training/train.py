@@ -41,9 +41,14 @@ def make_target(reports: List[Report], label_style: Optional[str]) -> List[List[
 
 def train(reports_path: str, save_path: str, model_name: Optional[str], caching: bool = False,
           checkpoint_path: Optional[str] = None):
-    torch.manual_seed(9219321)
-    numpy.random.seed(9219321)
-    random.seed(9219321)
+    seed = 9219321
+
+    numpy.random.seed(seed)
+    random.seed(seed)
+    torch.manual_seed(seed)
+    torch.cuda.manual_seed(seed)
+    torch.backends.cudnn.deterministic = True
+    torch.backends.cudnn.benchmark = True
 
     reports = []
     for file_name in iterate_reports(reports_path):
@@ -137,9 +142,9 @@ def main():
     parser.add_argument("--model", type=str, default=None)
     args = parser.parse_args()
 
-    # train(args.reports_path, args.save_path, "scaffle")
-    train(args.reports_path, args.save_path, None, caching=True)
-    # train(args.reports_path, args.save_path, None, checkpoint_path="<path to .cpkt>")
+    train(args.reports_path, args.save_path, "scaffle")
+    # train(args.reports_path, args.save_path, None, caching=True)
+    # train(args.reports_path, args.save_path, None, checkpoint_path="/home/dumtrii/Documents/practos/spring2/bug_ml/new/training/lightning_logs/version_368/checkpoints/epoch=30-step=18909.ckpt")
 
 
 if __name__ == '__main__':

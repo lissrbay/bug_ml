@@ -29,7 +29,7 @@ class ScaffleReportEncoder(ReportEncoder, nn.Module):
         self.device = device
         self.max_len = max_len
 
-        self.word2vec = Word2Vec(vector_size=word2vec_dim, workers=11, min_count=20)
+        self.word2vec = Word2Vec(vector_size=word2vec_dim, workers=1, min_count=20)
         self.lstm = nn.LSTM(self.word2vec_dim, self.hidden_dim, num_layers=2, bidirectional=True)
 
     def encode_report(self, report: Report) -> Tensor:
