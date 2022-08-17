@@ -9,12 +9,12 @@ from new.model.report_encoders.report_encoder import ReportEncoder
 class RobertaReportEncoder(ReportEncoder, torch.nn.Module):
     BERT_MODEL_DIM = 768
 
-    def __init__(self, caching: bool = False, **kwargs):
+    def __init__(self, frames_count: int, caching: bool = False, **kwargs):
         super().__init__()
-        self.frames_count = kwargs['frames_count']
+        self.frames_count = frames_count
         self.tokenizer = RobertaTokenizer.from_pretrained("microsoft/codebert-base")
         self.model = RobertaModel.from_pretrained("microsoft/codebert-base")
-        self.device = kwargs['device'] if 'device' in kwargs else 'cpu'
+        self.device = kwargs.get('device', 'cpu')
         self.model.to(self.device)
         self.report_cache = {}
         self.caching = caching

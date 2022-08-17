@@ -5,6 +5,7 @@ from torch import Tensor
 
 from new.data.report import Report
 
+
 class ReportEncoder(ABC):
     def fit(self, reports: List[Report], target: List[List[int]]) -> 'ReportEncoder':
         return self

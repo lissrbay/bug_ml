@@ -136,13 +136,14 @@ def train_lstm_tagger(tagger: LstmTagger, reports: List[Report], target: List[Li
         for param in model.tagger.report_encoder.model.parameters():
             param.requires_grad = True
 
+    gpus = 1
     if label_style is not None:
-        trainer = Trainer(gpus=1)
+        trainer = Trainer(gpus=gpus)
     elif caching:
-        trainer = Trainer(gpus=1)
+        trainer = Trainer(gpus=gpus)
     else:
         model.tagger.report_encoder.model.gradient_checkpointing_enable()
-        trainer = Trainer(gpus=1, callbacks=[ZeroCallback()])
+        trainer = Trainer(gpus=gpus, callbacks=[ZeroCallback()])
     trainer.validate(model, datamodule)
     trainer.fit(model, datamodule)
     return tagger
