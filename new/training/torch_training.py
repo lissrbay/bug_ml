@@ -39,7 +39,7 @@ class TrainingModule(pl.LightningModule):
 
         return labels_tensor.permute(1, 0).to(self.device)
 
-    def training_step(self, batch, batch_idx):
+    def calculate_step(self, batch):
         reports, target, masks = batch
         mask = torch.cat(masks, dim=1)
 
@@ -72,78 +72,19 @@ class TrainingModule(pl.LightningModule):
 
         self.train_metrics.update(preds, target, mask, scores=scores)
 
-        self.log("train_loss", loss)
+        return loss
 
+    def training_step(self, batch, batch_idx):
+        loss = self.calculate_step(batch)
+        self.log("train_loss", loss)
         return loss
 
     def validation_step(self, batch, *args):
-        reports, target, masks = batch
-        mask = torch.cat(masks, dim=1)
-        if self.tagger.with_crf:
-            emissions = torch.cat([self.tagger.calc_emissions(report, mask) for report, mask in zip(reports, masks)],
-                                  dim=1)
-            loss = -self.tagger.crf(emissions, target.long(), mask)
-        else:
-            scores = self.tagger.forward(reports, masks)
-            if self.tagger.scaffle:
-                loss = self.mseloss(scores, target.float())
-            else:
-                loss = self.celoss(scores, target.long())
-
-        with torch.no_grad():
-            scores = self.tagger.forward(reports, masks)
-            if self.tagger.scaffle:
-                preds = (scores > 0.5).int()
-            else:
-                preds = scores.argmax(dim=-1)
-
-        if self.tagger.scaffle:
-            scores = scores.unsqueeze(-1)
-            scores = torch.cat((1 - scores, scores), dim=-1)
-        else:
-            scores = self.softmax(scores)
-
-        if self.tagger.scaffle:
-            # target = (target >= 1).long()
-            target = self.build_scaffle_labels(reports, target)
-
-        self.val_metrics.update(preds, target, mask, scores=scores)
-
+        loss = self.calculate_step(batch)
         return loss
 
     def test_step(self, batch, *args):
-        reports, target, masks = batch
-        mask = torch.cat(masks, dim=1)
-        if self.tagger.with_crf:
-            emissions = torch.cat([self.tagger.calc_emissions(report, mask) for report, mask in zip(reports, masks)],
-                                  dim=1)
-            loss = -self.tagger.crf(emissions, target.long(), mask)
-        else:
-            scores = self.tagger.forward(reports, masks)
-            if self.tagger.scaffle:
-                loss = self.mseloss(scores, target.float())
-            else:
-                loss = self.celoss(scores, target.long())
-
-        with torch.no_grad():
-            scores = self.tagger.forward(reports, masks)
-            if self.tagger.scaffle:
-                preds = (scores > 0.5).int()
-            else:
-                preds = scores.argmax(dim=-1)
-
-        if self.tagger.scaffle:
-            scores = scores.unsqueeze(-1)
-            scores = torch.cat((1 - scores, scores), dim=-1)
-        else:
-            scores = self.softmax(scores)
-
-        if self.tagger.scaffle:
-            # target = (target >= 1).long()
-            target = self.build_scaffle_labels(reports, target)
-
-        self.test_metrics.update(preds, target, mask, scores=scores)
-
+        loss = self.calculate_step(batch)
         return loss
 
     def validation_epoch_end(self, outputs: List[Any]) -> None:
