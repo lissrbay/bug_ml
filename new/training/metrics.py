@@ -25,15 +25,15 @@ class Precision(Metric):
         # state from multiple processes
         super().__init__(dist_sync_on_step=dist_sync_on_step)
 
-        self.add_state("tp", default=torch.tensor(0), dist_reduce_fx="sum")
-        self.add_state("total", default=torch.tensor(0), dist_reduce_fx="sum")
+        self.add_state("tp_prec", default=torch.tensor(0), dist_reduce_fx="sum")
+        self.add_state("total_prec", default=torch.tensor(0), dist_reduce_fx="sum")
 
     def update(self, preds: torch.Tensor, target: torch.Tensor, mask: torch.Tensor, **kwargs):
-        self.tp += torch.sum(preds[mask] * target[mask], dim=0)
-        self.total += target[mask].sum().item()
+        self.tp_prec += torch.sum(preds[mask] * target[mask], dim=0)
+        self.total_prec += target[mask].sum().item()
 
     def compute(self):
-        return round((self.tp.float() / max(self.total, 1)).item(), 3)
+        return round((self.tp_prec.float() / max(self.total_prec, 1)).item(), 3)
 
 
 class Recall(Metric):
@@ -43,15 +43,15 @@ class Recall(Metric):
         # state from multiple processes
         super().__init__(dist_sync_on_step=dist_sync_on_step)
 
-        self.add_state("tp", default=torch.tensor(0), dist_reduce_fx="sum")
-        self.add_state("total", default=torch.tensor(0), dist_reduce_fx="sum")
+        self.add_state("tp_recall", default=torch.tensor(0), dist_reduce_fx="sum")
+        self.add_state("total_recall", default=torch.tensor(0), dist_reduce_fx="sum")
 
     def update(self, preds: torch.Tensor, target: torch.Tensor, mask: torch.Tensor, **kwargs):
-        self.tp += torch.sum(preds[mask] * target[mask], dim=0)
-        self.total += preds[mask].sum().item()
+        self.tp_recall += torch.sum(preds[mask] * target[mask], dim=0)
+        self.total_recall += preds[mask].sum().item()
 
     def compute(self):
-        return round((self.tp.float() / max(self.total, 1)).item(), 3)
+        return round((self.tp_recall.float() / max(self.total_recall, 1)).item(), 3)
 
 
 class TopkAccuracy(Metric):
@@ -61,8 +61,8 @@ class TopkAccuracy(Metric):
         # state from multiple processes
         super().__init__(dist_sync_on_step=dist_sync_on_step)
 
-        self.add_state("tp", default=torch.tensor(0).float(), dist_reduce_fx="sum")
-        self.add_state("total", default=torch.tensor(0).float(), dist_reduce_fx="sum")
+        self.add_state("tp_acc", default=torch.tensor(0).float(), dist_reduce_fx="sum")
+        self.add_state("total_acc", default=torch.tensor(0).float(), dist_reduce_fx="sum")
         self.k = k
 
     def update(self, preds: torch.Tensor, target: torch.Tensor, mask: torch.Tensor, scores: torch.Tensor):
@@ -81,8 +81,8 @@ class TopkAccuracy(Metric):
         #     print(gathered)
         #     print(inds)
 
-        self.tp += torch.sum(gathered)
-        self.total += torch.sum(torch.any(target, dim=0))
+        self.tp_acc += torch.sum(gathered)
+        self.total_acc += torch.sum(torch.any(target, dim=0))
 
     def compute(self):
-        return round((self.tp.float() / max(self.total, 1)).item(), 3)
+        return round((self.tp_acc.float() / max(self.total_acc, 1)).item(), 3)

@@ -24,12 +24,16 @@ class ReportsDataModule(pl.LightningDataModule):
     def setup(self, stage: Optional[str] = None):
         self.rtrain, self.rval = train_test_split(ReportsDataset(
             self.reports, self.targets, self.max_len, self.label_style), test_size=0.2, shuffle=False)
+        self.rval, self.rtest = train_test_split(self.rval, test_size=0.5, shuffle=False)
 
     def train_dataloader(self) -> DataLoader:
         return DataLoader(self.rtrain, self.batch_size, collate_fn=report_collate, num_workers=0, shuffle=True)
 
     def val_dataloader(self) -> Union[DataLoader, List[DataLoader]]:
         return DataLoader(self.rval, self.batch_size, collate_fn=report_collate, num_workers=0)
+
+    def test_dataloader(self) -> Union[DataLoader, List[DataLoader]]:
+        return DataLoader(self.rtest, self.batch_size, collate_fn=report_collate, num_workers=0)
 
 
 def second_dim_collate(data):

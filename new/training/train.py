@@ -73,7 +73,7 @@ def train(reports_path: str, config_path: str, model_name: Optional[str], cachin
             for param in encoder.model.parameters():
                 param.requires_grad = False
     else:
-        raise ValueError(f"Wrong model type. Should be in {model_names}")
+        raise ValueError(f"Wrong model type")
 
     # path_to_precomputed_embs="/home/lissrbay/Загрузки/code2seq_embs"),
     # GitFeaturesTransformer(
@@ -103,7 +103,7 @@ def main():
 
     train(args.reports_path, args.config_path, args.model)
     # train(args.reports_path, args.save_path, args.model, caching=True)
-    # train(args.reports_path, args.save_path, args.model, checkpoint_path="/home/dumtrii/Documents/practos/spring2/bug_ml/new/training/lightning_logs/version_368/checkpoints/epoch=30-step=18909.ckpt")
+    # train(args.reports_path, args.save_path, args.model, checkpoint_path="/home/dumtrii/Documents/practos/spring2/bug_ml/new/training/lightning_logs/version_379/checkpoints/epoch=6-step=4836.ckpt")
 
 
 if __name__ == '__main__':

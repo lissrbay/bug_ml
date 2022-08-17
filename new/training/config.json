@@ -17,7 +17,7 @@
   },
   "deep_analyze": {
     "encoder": {
-      "max_len": 255
+      "max_len": 80
     },
     "tagger": {
       "hidden_dim": 250,
