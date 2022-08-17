@@ -97,7 +97,7 @@ def train(reports_path: str, config_path: str, model_name: Optional[str], cachin
 def main():
     parser = argparse.ArgumentParser()
     parser.add_argument("--reports_path", type=str)
-    parser.add_argument("--config_path", type=str)
+    parser.add_argument("--config_path", type=str, default="config.json")
     parser.add_argument("--model", type=str, required=True, choices=["scaffle", "deep_analyze", "bert"])
     args = parser.parse_args()
 
