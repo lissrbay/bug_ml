@@ -39,7 +39,7 @@ class TrainingModule(pl.LightningModule):
 
         return labels_tensor.permute(1, 0).to(self.device)
 
-    def calculate_step(self, batch):
+    def calculate_step(self, batch, metrics):
         reports, target, masks = batch
         mask = torch.cat(masks, dim=1)
 
@@ -70,21 +70,21 @@ class TrainingModule(pl.LightningModule):
         if self.tagger.scaffle:
             target = self.build_scaffle_labels(reports, target)
 
-        self.train_metrics.update(preds, target, mask, scores=scores)
+        metrics.update(preds, target, mask, scores=scores)
 
         return loss
 
     def training_step(self, batch, batch_idx):
-        loss = self.calculate_step(batch)
+        loss = self.calculate_step(batch, self.train_metrics)
         self.log("train_loss", loss)
         return loss
 
     def validation_step(self, batch, *args):
-        loss = self.calculate_step(batch)
+        loss = self.calculate_step(batch, self.val_metrics)
         return loss
 
     def test_step(self, batch, *args):
-        loss = self.calculate_step(batch)
+        loss = self.calculate_step(batch, self.test_metrics)
         return loss
 
     def validation_epoch_end(self, outputs: List[Any]) -> None:
