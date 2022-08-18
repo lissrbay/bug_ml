@@ -57,6 +57,8 @@ def train(reports_path: str, config_path: str, model_name: Optional[str], cachin
             if sum(frame.meta["label"] for frame in report.frames) > 0:
                 reports.append(report)
 
+    reports = sorted(reports, key=lambda r: r.id)
+
     target = make_target(reports, model_name)
 
     with open(config_path, "r") as f:
@@ -113,4 +115,5 @@ if __name__ == '__main__':
 
 # python train.py --reports_path "/Users/Aleksandr.Khvorov/jb/exception-analyzer/data/scaffle_reports"
 # python -m new.training.train --reports_path "/home/ubuntu/akhvorov/bugloc/data/scaffle_reports" --config_path "new/training/config.json" --model deep_analyze
+# python -m new.training.train --reports_path "/home/ubuntu/akhvorov/bugloc/data/scaffle_reports" --config_path "new/training/config.json" --model bert --caching
 # python -m new.training.train --reports_path "/home/ubuntu/akhvorov/bugloc/data/scaffle_reports" --config_path "new/training/config.json" --model bert --caching
