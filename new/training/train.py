@@ -11,8 +11,10 @@ import torch
 
 from new.data.report import Report
 from new.data_aggregation.utils import iterate_reports
+from new.model.features.annotations_features import AnnotationsFeaturesTransformer
 from new.model.lstm_tagger import LstmTagger
 from new.model.report_encoders.codebert_encoder import RobertaReportEncoder
+from new.model.report_encoders.concat_encoders import ConcatReportEncoders
 from new.model.report_encoders.scaffle_report_encoder import ScaffleReportEncoder
 from new.model.report_encoders.tfidf import TfIdfReportEncoder
 from new.training.torch_training import train_lstm_tagger
@@ -50,12 +52,15 @@ def train(reports_path: str, config_path: str, model_name: Optional[str], cachin
     device = 'cuda' if torch.cuda.is_available() else "cpu"
 
     reports = []
+    i = 0
     for file_name in iterate_reports(reports_path):
         report_path = os.path.join(reports_path, file_name)
         report = Report.load_report(report_path)
         if report.frames:
             if sum(frame.meta["label"] for frame in report.frames) > 0:
                 reports.append(report)
+        i += 1
+
 
     target = make_target(reports, model_name)
 
@@ -101,7 +106,7 @@ def main():
     parser.add_argument("--model", type=str, required=True, choices=["scaffle", "deep_analyze", "bert"])
     args = parser.parse_args()
 
-    train(args.reports_path, args.config_path, args.model)
+    train(args.reports_path, args.config_path, "bert", checkpoint_path='/home/inf/PycharmProjects/bug_ml/new/training/lightning_logs/version_103/checkpoints/epoch=11-step=14640.ckpt')
     # train(args.reports_path, args.save_path, args.model, caching=True)
     # train(args.reports_path, args.save_path, args.model, checkpoint_path="/home/dumtrii/Documents/practos/spring2/bug_ml/new/training/lightning_logs/version_379/checkpoints/epoch=6-step=4836.ckpt")
 
