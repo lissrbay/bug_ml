@@ -131,7 +131,7 @@ def train_lstm_tagger(tagger: LstmTagger, reports: List[Report], target: List[Li
         model.tagger.report_encoder.model.gradient_checkpointing_enable()
         callbacks.append(ZeroCallback())
 
-    trainer = Trainer(gpus=gpus, callbacks=callbacks)
+    trainer = Trainer(gpus=gpus, callbacks=callbacks, deterministic=True)
 
     trainer.validate(model, datamodule)
     # trainer.test(model, datamodule)
