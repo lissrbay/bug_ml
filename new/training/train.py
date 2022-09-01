@@ -2,11 +2,10 @@ import argparse
 import json
 import logging
 import os
-import random
 import sys
 from typing import List, Optional
 
-import numpy.random
+import pytorch_lightning
 import torch
 
 from new.data.report import Report
@@ -43,12 +42,9 @@ def train(reports_path: str, config_path: str, model_name: Optional[str], cachin
     print(f"Model name: {model_name}")
     seed = 9219321
 
-    numpy.random.seed(seed)
-    random.seed(seed)
-    torch.manual_seed(seed)
-    torch.cuda.manual_seed(seed)
+    pytorch_lightning.seed_everything(seed, workers=True)
     torch.backends.cudnn.deterministic = True
-    torch.backends.cudnn.benchmark = True
+    torch.backends.cudnn.benchmark = False
 
     device = 'cuda' if torch.cuda.is_available() else "cpu"
 
