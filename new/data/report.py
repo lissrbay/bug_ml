@@ -1,8 +1,14 @@
 import base64
 import json
 import pickle
-from typing import List, Dict
+import sys
 from dataclasses import dataclass
+from typing import List, Dict
+
+import attr
+
+from new import data
+
 
 @dataclass
 class Code:
@@ -10,12 +16,9 @@ class Code:
     end: int
     code: str
 
-import attr
-
-import sys
-from new import data
 
 sys.modules['data'] = data
+
 
 @attr.s(frozen=True, auto_attribs=True)
 class Frame:

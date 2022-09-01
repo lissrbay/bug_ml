@@ -11,8 +11,9 @@ import torch
 
 from new.data.report import Report
 from new.data_aggregation.utils import iterate_reports
-from new.model.features.annotations_features import AnnotationsFeaturesTransformer
+# from new.model.features.annotations_features import AnnotationsFeaturesTransformer
 from new.model.lstm_tagger import LstmTagger
+from new.model.report_encoders.annotations_encoder import AnnotationsEncoder
 from new.model.report_encoders.codebert_encoder import RobertaReportEncoder
 from new.model.report_encoders.concat_encoders import ConcatReportEncoders
 from new.model.report_encoders.scaffle_report_encoder import ScaffleReportEncoder
@@ -38,7 +39,7 @@ def make_target(reports: List[Report], label_style: Optional[str]) -> List[List[
 
 
 def train(reports_path: str, config_path: str, model_name: Optional[str], caching: bool = False,
-          checkpoint_path: Optional[str] = None):
+          annotations: bool = False, checkpoint_path: Optional[str] = None):
     print(f"Model name: {model_name}")
     seed = 9219321
 
@@ -52,15 +53,12 @@ def train(reports_path: str, config_path: str, model_name: Optional[str], cachin
     device = 'cuda' if torch.cuda.is_available() else "cpu"
 
     reports = []
-    i = 0
     for file_name in iterate_reports(reports_path):
         report_path = os.path.join(reports_path, file_name)
         report = Report.load_report(report_path)
         if report.frames:
             if sum(frame.meta["label"] for frame in report.frames) > 0:
                 reports.append(report)
-        i += 1
-
 
     reports = sorted(reports, key=lambda r: r.id)
 
@@ -87,6 +85,9 @@ def train(reports_path: str, config_path: str, model_name: Optional[str], cachin
     #    frames_count=config["training"]["max_len"]).fit(reports, target),
     # MetadataFeaturesTransformer(frames_count=config["training"]["max_len"])
 
+    if annotations:
+        encoder = ConcatReportEncoders([encoder, AnnotationsEncoder(caching=True, device=device)])
+
     tagger = LstmTagger(
         encoder,
         max_len=max_len,
@@ -96,7 +97,7 @@ def train(reports_path: str, config_path: str, model_name: Optional[str], cachin
     )
 
     tagger = train_lstm_tagger(tagger, reports, target, caching=caching, label_style=model_name,
-                               cpkt_path=checkpoint_path, **config[model_name]["training"])
+                               cpkt_path=checkpoint_path, **config[model_name]["training"], device=device)
 
     return tagger
 
@@ -107,10 +108,11 @@ def main():
     parser.add_argument("--config_path", type=str, default="config.json")
     parser.add_argument("--model", type=str, required=True, choices=["scaffle", "deep_analyze", "bert"])
     parser.add_argument("--caching", action="store_true")
+    parser.add_argument("--annotations", action="store_true")
     parser.add_argument("--checkpoint_path", type=str, default=None)
     args = parser.parse_args()
 
-    train(args.reports_path, args.config_path, args.model, caching=args.caching, checkpoint_path=args.checkpoint_path)
+    train(args.reports_path, args.config_path, args.model, caching=args.caching, annotations=args.annotations, checkpoint_path=args.checkpoint_path)
     # train(args.reports_path, args.save_path, args.model, caching=True)
     # train(args.reports_path, args.save_path, args.model, checkpoint_path=args.checkpoint_path"/home/dumtrii/Documents/practos/spring2/bug_ml/new/training/lightning_logs/version_379/checkpoints/epoch=6-step=4836.ckpt")
 
@@ -118,7 +120,6 @@ def main():
 if __name__ == '__main__':
     main()
 
-# python train.py --reports_path "/Users/Aleksandr.Khvorov/jb/exception-analyzer/data/scaffle_reports"
+# python train.py --reports_path "/Users/Aleksandr.Khvorov/jb/exception-analyzer/data/scaffle_reports" --config_path "new/training/config.json" --model bert --caching --annotations
 # python -m new.training.train --reports_path "/home/ubuntu/akhvorov/bugloc/data/scaffle_reports" --config_path "new/training/config.json" --model deep_analyze
-# python -m new.training.train --reports_path "/home/ubuntu/akhvorov/bugloc/data/scaffle_reports" --config_path "new/training/config.json" --model bert --caching
-# python -m new.training.train --reports_path "/home/ubuntu/akhvorov/bugloc/data/scaffle_reports" --config_path "new/training/config.json" --model bert --caching
+# python -m new.training.train --reports_path "/home/ubuntu/akhvorov/bugloc/data/scaffle_reports" --config_path "new/training/config.json" --model bert --caching --annotations

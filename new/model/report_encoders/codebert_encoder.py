@@ -1,8 +1,6 @@
-import numpy as np
 import torch
 from torch import Tensor
 from transformers import RobertaTokenizer, RobertaModel
-from random import random
 from new.data.report import Report
 from new.model.report_encoders.report_encoder import ReportEncoder
 
@@ -24,22 +22,10 @@ class RobertaReportEncoder(ReportEncoder):
         report_embs = []
         if report.id in self.report_cache and self.caching:
             return self.report_cache[report.id]
-        report_times = []
 
         for frame in report.frames:
             method_code = frame.get_code_decoded()
-            report_max_time = frame.meta['report_max_time']
 
-            method_max_time = frame.meta['method_time_max']/1000
-            has_code = frame.code.code != ''
-            #print(method_max_time)
-            if has_code and report_max_time > 0:
-                frame_time = method_max_time-report_max_time
-                if np.isnan(frame_time):
-                    frame_time = 0.0
-            else:
-                frame_time = 0.0
-            #print(frame_time, type(frame_time))
             if method_code:
                 if not self.caching:
                     code_tokens = self.tokenizer.tokenize(method_code[:512])
@@ -56,15 +42,11 @@ class RobertaReportEncoder(ReportEncoder):
                         del tokens_ids, code_tokens
             else:
                 vec = torch.zeros((self.BERT_MODEL_DIM,)).to(self.device).requires_grad_()
-            #vec = torch.FloatTensor(list(vec) + [frame_time + 0.0001])
             report_embs.append(vec)
-            report_times.append(frame_time)
-        report_times = np.array(report_times)
-        report_times = report_times / np.max(report_times) if np.max(report_times) > 0 else report_times
-        report_times = torch.FloatTensor(report_times).to(self.device)
 
         report_embs = torch.cat(report_embs).reshape(-1, self.BERT_MODEL_DIM)
-        self.report_cache[report.id] = torch.cat([report_embs, report_times.reshape(report_embs.shape[0], 1)], axis=1)
+
+        self.report_cache[report.id] = report_embs
         return self.report_cache[report.id]
 
     @property
@@ -73,4 +55,4 @@ class RobertaReportEncoder(ReportEncoder):
 
     @property
     def dim(self):
-        return self.BERT_MODEL_DIM + 1
+        return self.BERT_MODEL_DIM
