@@ -135,7 +135,7 @@ def train_lstm_tagger(tagger: LstmTagger, reports: List[Report], target: List[Li
 
     trainer.validate(model, datamodule)
     trainer.test(model, datamodule)
-    trainer.fit(model, datamodule))
+    trainer.fit(model, datamodule)
     trainer.test(model, datamodule)
     return tagger
 
