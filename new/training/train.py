@@ -2,11 +2,10 @@ import argparse
 import json
 import logging
 import os
-import random
 import sys
 from typing import List, Optional
 
-import numpy.random
+import pytorch_lightning
 import torch
 
 from new.data.report import Report
@@ -40,12 +39,9 @@ def train(reports_path: str, config_path: str, model_name: Optional[str], cachin
     print(f"Model name: {model_name}")
     seed = 9219321
 
-    numpy.random.seed(seed)
-    random.seed(seed)
-    torch.manual_seed(seed)
-    torch.cuda.manual_seed(seed)
+    pytorch_lightning.seed_everything(seed, workers=True)
     torch.backends.cudnn.deterministic = True
-    torch.backends.cudnn.benchmark = True
+    torch.backends.cudnn.benchmark = False
 
     device = 'cuda' if torch.cuda.is_available() else "cpu"
 
@@ -56,6 +52,8 @@ def train(reports_path: str, config_path: str, model_name: Optional[str], cachin
         if report.frames:
             if sum(frame.meta["label"] for frame in report.frames) > 0:
                 reports.append(report)
+
+    reports = sorted(reports, key=lambda r: r.id)
 
     target = make_target(reports, model_name)
 
@@ -99,11 +97,13 @@ def main():
     parser.add_argument("--reports_path", type=str)
     parser.add_argument("--config_path", type=str, default="config.json")
     parser.add_argument("--model", type=str, required=True, choices=["scaffle", "deep_analyze", "bert"])
+    parser.add_argument("--caching", action="store_true")
+    parser.add_argument("--checkpoint_path", type=str, default=None)
     args = parser.parse_args()
 
-    train(args.reports_path, args.config_path, args.model)
+    train(args.reports_path, args.config_path, args.model, caching=args.caching, checkpoint_path=args.checkpoint_path)
     # train(args.reports_path, args.save_path, args.model, caching=True)
-    # train(args.reports_path, args.save_path, args.model, checkpoint_path="/home/dumtrii/Documents/practos/spring2/bug_ml/new/training/lightning_logs/version_379/checkpoints/epoch=6-step=4836.ckpt")
+    # train(args.reports_path, args.save_path, args.model, checkpoint_path=args.checkpoint_path"/home/dumtrii/Documents/practos/spring2/bug_ml/new/training/lightning_logs/version_379/checkpoints/epoch=6-step=4836.ckpt")
 
 
 if __name__ == '__main__':
@@ -111,3 +111,5 @@ if __name__ == '__main__':
 
 # python train.py --reports_path "/Users/Aleksandr.Khvorov/jb/exception-analyzer/data/scaffle_reports"
 # python -m new.training.train --reports_path "/home/ubuntu/akhvorov/bugloc/data/scaffle_reports" --config_path "new/training/config.json" --model deep_analyze
+# python -m new.training.train --reports_path "/home/ubuntu/akhvorov/bugloc/data/scaffle_reports" --config_path "new/training/config.json" --model bert --caching
+# python -m new.training.train --reports_path "/home/ubuntu/akhvorov/bugloc/data/scaffle_reports" --config_path "new/training/config.json" --model bert --caching

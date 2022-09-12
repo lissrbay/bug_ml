@@ -83,9 +83,9 @@ class TrainingModule(pl.LightningModule):
         loss = self.calculate_step(batch, self.val_metrics)
         return loss
 
-    def test_step(self, batch, *args):
-        loss = self.calculate_step(batch, self.test_metrics)
-        return loss
+    # def test_step(self, batch, *args):
+    #     loss = self.calculate_step(batch, self.test_metrics)
+    #     return loss
 
     def validation_epoch_end(self, outputs: List[Any]) -> None:
         super().validation_epoch_end(outputs)
@@ -93,11 +93,11 @@ class TrainingModule(pl.LightningModule):
         print(self.val_metrics.compute())
         self.val_metrics.reset()
 
-    def test_epoch_end(self, outputs: List[Any]) -> None:
-        super().test_epoch_end(outputs)
-        self.log_dict(self.test_metrics.compute())
-        print(self.test_metrics.compute())
-        self.test_metrics.reset()
+    # def test_epoch_end(self, outputs: List[Any]) -> None:
+    #     super().test_epoch_end(outputs)
+    #     self.log_dict(self.test_metrics.compute())
+    #     print(self.test_metrics.compute())
+    #     self.test_metrics.reset()
 
     def training_epoch_end(self, outputs: List[Any]) -> None:
         super().training_epoch_end(outputs)
@@ -131,10 +131,10 @@ def train_lstm_tagger(tagger: LstmTagger, reports: List[Report], target: List[Li
         model.tagger.report_encoder.model.gradient_checkpointing_enable()
         callbacks.append(ZeroCallback())
 
-    trainer = Trainer(gpus=gpus, callbacks=callbacks)
+    trainer = Trainer(gpus=gpus, callbacks=callbacks, deterministic=True)
 
     trainer.validate(model, datamodule)
-    trainer.test(model, datamodule)
+    # trainer.test(model, datamodule)
     trainer.fit(model, datamodule)
     return tagger
 
