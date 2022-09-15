@@ -86,7 +86,7 @@ def train(reports_path: str, config_path: str, model_name: Optional[str], cachin
         **config[model_name]["tagger"]
     )
 
-    tagger = train_lstm_tagger(tagger, reports, target, caching=caching, label_style=model_name,
+    tagger = train_lstm_tagger(tagger, reports, target, caching=caching, model_name=model_name,
                                cpkt_path=checkpoint_path, **config[model_name]["training"])
 
     return tagger

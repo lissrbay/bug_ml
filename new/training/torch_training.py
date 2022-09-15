@@ -13,6 +13,8 @@ from new.model.lstm_tagger import LstmTagger
 from new.training.data import ReportsDataModule
 from new.training.metrics import Precision, Recall, TopkAccuracy
 
+from pytorch_lightning import loggers as pl_loggers
+
 
 class TrainingModule(pl.LightningModule):
     def __init__(self, tagger: LstmTagger, lr: float = 1e-5):
@@ -109,9 +111,9 @@ class TrainingModule(pl.LightningModule):
 
 
 def train_lstm_tagger(tagger: LstmTagger, reports: List[Report], target: List[List[int]], batch_size: int,
-                      max_len: int, label_style: Optional[str], lr: float, caching: bool = False,
+                      max_len: int, model_name: Optional[str], lr: float, caching: bool = False,
                       cpkt_path: Optional[str] = None) -> LstmTagger:
-    datamodule = ReportsDataModule(reports, target, batch_size, max_len, label_style)
+    datamodule = ReportsDataModule(reports, target, batch_size, max_len, model_name)
     model = TrainingModule(tagger, lr)
 
     if cpkt_path:
@@ -127,16 +129,22 @@ def train_lstm_tagger(tagger: LstmTagger, reports: List[Report], target: List[Li
         mode="max"
     )]
 
-    if label_style == "bert" and not caching:
+    if model_name == "bert" and not caching:
         model.tagger.report_encoder.model.gradient_checkpointing_enable()
         callbacks.append(ZeroCallback())
 
-    trainer = Trainer(gpus=gpus, callbacks=callbacks, deterministic=True, max_epochs=20)
+    logs_name = model_name
+    if caching:
+        logs_name += "_caching"
+
+    tb_logger = pl_loggers.TensorBoardLogger(save_dir="lightning_logs/", name=logs_name)
+
+    trainer = Trainer(gpus=gpus, callbacks=callbacks, deterministic=True, logger=tb_logger, max_epochs=20)
 
     trainer.validate(model, datamodule)
     trainer.test(model, datamodule)
     trainer.fit(model, datamodule)
-    trainer.test(model, datamodule)
+    trainer.test(model, datamodule, ckpt_path="best")
     return tagger
 
 
