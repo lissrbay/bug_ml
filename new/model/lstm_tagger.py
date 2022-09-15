@@ -1,7 +1,5 @@
 from typing import List, Optional
 
-import numpy as np
-import pytorch_lightning as pl
 import torch
 from torch import nn
 from torch.nn.functional import pad
@@ -55,9 +53,9 @@ class LstmTagger(BlamedTagger, nn.Module):
             self.scaffle_final = nn.Linear(2 * self.hidden_dim, max_len)
 
     def calc_emissions(self, report: Report, mask: torch.Tensor) -> torch.Tensor:
-        features = self.report_encoder.encode_report(report).to(self.device)
+        features = self.report_encoder.encode_report(report)
         features = features[:self.max_len]
-        features = pad(features, (0, 0, 0, self.max_len - features.shape[0])).unsqueeze(1)
+        features = pad(features, (0, 0, 0, self.max_len - features.shape[0])).unsqueeze(1).to(self.device)
         embeddings = features * mask.unsqueeze(-1)
         res, _ = self.lstm(embeddings)
 

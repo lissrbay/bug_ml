@@ -1,12 +1,11 @@
 import torch
 from torch import Tensor
 from transformers import RobertaTokenizer, RobertaModel
-
 from new.data.report import Report
 from new.model.report_encoders.report_encoder import ReportEncoder
 
 
-class RobertaReportEncoder(ReportEncoder, torch.nn.Module):
+class RobertaReportEncoder(ReportEncoder):
     BERT_MODEL_DIM = 768
 
     def __init__(self, frames_count: int, caching: bool = False, **kwargs):
@@ -23,8 +22,10 @@ class RobertaReportEncoder(ReportEncoder, torch.nn.Module):
         report_embs = []
         if report.id in self.report_cache and self.caching:
             return self.report_cache[report.id]
+
         for frame in report.frames:
             method_code = frame.get_code_decoded()
+
             if method_code:
                 if not self.caching:
                     code_tokens = self.tokenizer.tokenize(method_code[:512])
@@ -42,7 +43,10 @@ class RobertaReportEncoder(ReportEncoder, torch.nn.Module):
             else:
                 vec = torch.zeros((self.BERT_MODEL_DIM,)).to(self.device).requires_grad_()
             report_embs.append(vec)
-        self.report_cache[report.id] = torch.cat(report_embs).reshape(-1, self.BERT_MODEL_DIM)
+
+        report_embs = torch.cat(report_embs).reshape(-1, self.BERT_MODEL_DIM)
+
+        self.report_cache[report.id] = report_embs
         return self.report_cache[report.id]
 
     @property
