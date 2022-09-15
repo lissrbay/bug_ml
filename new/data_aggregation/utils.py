@@ -1,10 +1,11 @@
 import os
 from dataclasses import dataclass
-from typing import Tuple, List, Optional, Set
+from typing import Optional
 
-from tqdm import tqdm
-from torch.nn.functional import pad
 from torch import FloatTensor
+from torch.nn.functional import pad
+from tqdm import tqdm
+
 
 @dataclass(frozen=True)
 class MethodSignature:

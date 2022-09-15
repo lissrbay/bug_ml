@@ -110,7 +110,7 @@ class TrainingModule(pl.LightningModule):
 
 def train_lstm_tagger(tagger: LstmTagger, reports: List[Report], target: List[List[int]], batch_size: int,
                       max_len: int, label_style: Optional[str], lr: float, caching: bool = False,
-                      cpkt_path: Optional[str] = None) -> LstmTagger:
+                      cpkt_path: Optional[str] = None, device: str = None) -> LstmTagger:
     datamodule = ReportsDataModule(reports, target, batch_size, max_len, label_style)
     model = TrainingModule(tagger, lr)
 
@@ -120,7 +120,7 @@ def train_lstm_tagger(tagger: LstmTagger, reports: List[Report], target: List[Li
         for param in model.tagger.report_encoder.model.parameters():
             param.requires_grad = True
 
-    gpus = 1
+    gpus = 1 if device == "cuda" else None
 
     callbacks = [ModelCheckpoint(
         monitor="val/TopkAccuracy",
