@@ -1,29 +1,31 @@
-from typing import List, Dict, Callable
+from typing import List
 
 import torch
 from torch import Tensor
 
 from new.data.report import Report
 from new.model.report_encoders.report_encoder import ReportEncoder
-from new.data_aggregation.utils import pad_features
+# from new.data_aggregation.utils import pad_features
+
 
 class ConcatReportEncoders(ReportEncoder):
     def __init__(self, report_encoders: List[ReportEncoder], **kwargs):
         assert len(report_encoders) > 0
         self.report_encoders = report_encoders
         self.device = kwargs['device'] if 'device' in kwargs else 'cpu'
-        self.frames_count = kwargs['frames_count']
 
     def fit(self, reports: List[Report], target: List[List[int]]):
-        for name, feature in self.features.items():
-            feature.fit(reports, target)
+        for encoder in self.report_encoders:
+            encoder.fit(reports, target)
 
     def encode_report(self, report: Report) -> Tensor:
         feature_value = []
         for encoder in self.report_encoders:
-            feature_value += [pad_features(encoder.encode_report(report).to(self.device))]
+            features = encoder.encode_report(report)
+            # padded_features = pad_features(features)
+            feature_value += [features]
 
-        return torch.cat(feature_value, dim=1)
+        return torch.cat(feature_value, dim=1).to(self.device)
 
     @property
     def dim(self) -> int:
