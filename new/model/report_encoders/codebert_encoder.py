@@ -5,7 +5,7 @@ from new.data.report import Report
 from new.model.report_encoders.report_encoder import ReportEncoder
 
 
-class RobertaReportEncoder(ReportEncoder):
+class RobertaReportEncoder(ReportEncoder, torch.nn.Module):
     BERT_MODEL_DIM = 768
 
     def __init__(self, frames_count: int, caching: bool = False, **kwargs):
@@ -46,8 +46,10 @@ class RobertaReportEncoder(ReportEncoder):
 
         report_embs = torch.cat(report_embs).reshape(-1, self.BERT_MODEL_DIM)
 
-        self.report_cache[report.id] = report_embs
-        return self.report_cache[report.id]
+        if self.caching:
+            self.report_cache[report.id] = report_embs
+
+        return report_embs
 
     @property
     def frame_count(self):
