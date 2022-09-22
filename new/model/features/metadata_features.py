@@ -21,7 +21,7 @@ class MetadataFeaturesTransformer(ReportEncoder):
 
     def extract_method_name_features(self, frames: List[Frame], method_name_features):
         for frame in frames:
-            method_name = frame.meta['method_name']
+            method_name = frame.method_name
             method_name_features['has_runs'].append("run" in method_name)
             method_name_features['has_dollars'].append("$" in method_name)
             method_name_features['is_parallel'].append("Thread" in method_name)
@@ -35,11 +35,12 @@ class MetadataFeaturesTransformer(ReportEncoder):
         return features['method_stack_position'].extend([i for i in range(len(frames))])
 
     def extract_method_file_position(self, frames: List[Frame], features):
-        for frame in frames:
-            if 'line' in frame.meta:
-                features.append(0 if frame.meta['line'] is None else int(frame.meta['line']))
-            else:
-                raise Exception('No field line in frame.meta')
+        features.append(0 if frame.line is None else int(frame.line))
+        # for frame in frames:
+        #     if 'line' in frame.meta:
+        #         features.append(0 if frame.line is None else int(frame.line))
+        #     else:
+        #         raise Exception('No field line in frame.meta')
 
     def encode_report(self, report: Report) -> Tensor:
         features = {k: [] for k in self.feature_names}

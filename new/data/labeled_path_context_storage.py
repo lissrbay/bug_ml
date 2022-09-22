@@ -186,7 +186,7 @@ class LabeledPathContextStorage:
             return None
 
         filename = self.code_to_filename[frame.code]
-        method_name = frame.meta["method_name"]
+        method_name = frame.method_name
 
         method_name = self.normalize_method(method_name)
 

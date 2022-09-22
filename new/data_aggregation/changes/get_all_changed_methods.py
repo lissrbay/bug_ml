@@ -30,7 +30,6 @@ def get_commits_and_issues(data_dir: str, reports_path: str) -> Dict[str, str]:
             if int(issue_id) in issues_reports:
                 issue2hash[issue_id].append(commits[i][0])
 
-
     return issue2hash
 
 
@@ -71,4 +70,4 @@ if __name__ == "__main__":
     parser.add_argument("--reports_path", type=str)
     parser.add_argument("--data_dir", type=str)
     args = parser.parse_args()
-    get_all_changed_methods(args.repo_path, args.data_dir)
+    get_all_changed_methods(args.repo_path, args.reports_path, args.data_dir)

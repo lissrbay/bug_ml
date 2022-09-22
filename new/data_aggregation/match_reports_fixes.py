@@ -35,26 +35,15 @@ def collect_info(path_to_reports: str, data_dir: str) -> pd.DataFrame:
     return full
 
 
-def frame_label(frame: Frame, fixed_methods: List[str], paths: List[str]) -> int:
-    method = frame.meta['method_name']
-    for fixed_method, path in zip(fixed_methods, paths):
-        if method and fixed_method in method:
-            return 1
-    return 0
-
-
-def label_frames(report: Report, commit_hash: str, methods_info: pd.DataFrame) -> Report:
+def label_frames(report: Report, commit_hash: str, methods_info: pd.DataFrame):
     fixed_methods = methods_info.fixed_method.values
     paths = methods_info.path.apply(lambda x: x.split('/')[-1])
 
-    frames_with_labels = []
     for frame in report.frames:
-        label = frame_label(frame, fixed_methods, paths)
-        frame_meta = frame.meta
-        frame_meta['label'] = label
-        frames_with_labels.append(Frame(frame.code, frame_meta))
-
-    return Report(report.id, report.exceptions, commit_hash, frames_with_labels)
+        method = frame.method_name
+        for fixed_method, path in zip(fixed_methods, paths):
+            if method and fixed_method in method:
+                frame.label = 1
 
 
 def find_fixed_method_for_report(issues_info: pd.DataFrame, report_id: int) -> pd.DataFrame:
@@ -79,8 +68,8 @@ def label_reports(issues_info: pd.DataFrame, path_to_reports: str, path_to_repor
         if fixed_methods.shape[0] != 0:
             report_hash = get_hash(report.id, issues_info)
 
-        report = label_frames(report, report_hash, fixed_methods)
-        report_success = 1 if sum([frame.meta['label'] for frame in report.frames]) else 0
+        label_frames(report, report_hash, fixed_methods)
+        report_success = 1 if sum([frame.label for frame in report.frames]) else 0
         reports_success += report_success
         if report.id != 0 and report_success:
             report.save_report(os.path.join(path_to_reports_save, str(report.id)))

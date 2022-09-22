@@ -139,7 +139,7 @@ def train_lstm_tagger(tagger: LstmTagger, reports: List[Report], target: List[Li
 
     tb_logger = pl_loggers.TensorBoardLogger(save_dir="lightning_logs/", name=logs_name)
 
-    trainer = Trainer(gpus=gpus, callbacks=callbacks, deterministic=True, logger=tb_logger, max_epochs=20)
+    trainer = Trainer(gpus=gpus, callbacks=callbacks, deterministic=True, logger=tb_logger, max_epochs=100)
 
     trainer.validate(model, datamodule)
     trainer.test(model, datamodule)
