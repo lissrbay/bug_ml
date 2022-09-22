@@ -30,7 +30,7 @@ def make_target(reports: List[Report], label_style: Optional[str]) -> List[List[
     targets = []
     for report in reports:
         if label_style == "scaffle":
-            target = [frame.label for frame in report.frames]
+            target = [frame.meta["label"] for frame in report.frames]
         else:
             target = [frame.meta["ground_truth"] for frame in report.frames]
         targets.append(target)
@@ -116,5 +116,6 @@ def main():
 if __name__ == '__main__':
     main()
 
+# python train.py --reports_path "/Users/Aleksandr.Khvorov/jb/exception-analyzer/data/scaffle_reports" --config_path "new/training/config.json" --model bert --caching --annotations
 # python -m new.training.train --reports_path "/home/ubuntu/akhvorov/bugloc/data/scaffle_reports" --config_path "new/training/config.json" --model deep_analyze
 # python -m new.training.train --reports_path "/home/ubuntu/akhvorov/bugloc/data/scaffle_reports" --config_path "new/training/config.json" --model bert --caching --annotations

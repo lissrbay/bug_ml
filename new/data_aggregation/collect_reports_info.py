@@ -28,8 +28,8 @@ if __name__ == "__main__":
 
     get_all_changed_methods(args.repo_path, args.reports_path, args.data_dir)
     match_reports_to_labels(args.reports_path,  args.data_dir)
-    add_paths_to_reports(args.repo_path, args.data_dir)
-    collect_sources_for_reports(args.repo_path, args.data_dir)
-    add_git_data(args.repo_path, args.data_dir)
+    add_paths_to_reports(args.repo_path, args.data_dir, args.files_limit)
+    collect_sources_for_reports(args.repo_path, args.data_dir, args.files_limit)
+    add_git_data(args.repo_path, args.data_dir, args.files_limit)
     #get_reports_embeddings(args.reports_path, args.data_dir, EMBEDDINGS_CACHE, args.files_limit)
 

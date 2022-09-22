@@ -21,7 +21,7 @@ class TfIdfReportEncoder(ReportEncoder):
         method_docs = []
         namespace_docs = []
         for report in reports:
-            tokens = [frame.method_name.split(".") for frame in report.frames]
+            tokens = [frame.meta['method_name'].split(".") for frame in report.frames]
             method_docs.append(".".join(frame_tokens[-1] for frame_tokens in tokens))
             namespace_docs.append(".".join(".".join(frame_tokens[:-1]) for frame_tokens in tokens))
 
@@ -39,7 +39,7 @@ class TfIdfReportEncoder(ReportEncoder):
         return self
 
     def encode_report(self, report: Report) -> Tensor:
-        tokens = [frame.method_name.split(".") for frame in report.frames[:self.max_len]]
+        tokens = [frame.meta['method_name'].split(".") for frame in report.frames[:self.max_len]]
 
         method_embeddings = self.method_vectorizer.transform([frame_tokens[-1] for frame_tokens in tokens]).todense()
         namespace_emdeddings = self.namespace_vectorizer.transform(

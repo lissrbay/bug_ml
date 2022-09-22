@@ -43,7 +43,7 @@ class GitFeaturesTransformer(ReportEncoder):
         for j, report in enumerate(reports):
             for i, frame in enumerate(report.frames):
                 committed_date, authored_date = self.get_modified_time(frame)
-                authors = frame.author.email if frame.author != 'no_author' else ''
+                authors = frame.meta['author'].email if 'author' in frame.meta else ''
 
                 features['commit_date'].append(committed_date)
                 features['modified_time_diff'].append(committed_date - authored_date)
