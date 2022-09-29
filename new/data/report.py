@@ -35,6 +35,7 @@ class Report:
     exceptions: str
     hash: str
     frames: List[Frame]
+    exception_time: int
 
     @staticmethod
     def _read_frames_from_base(base_report: Dict):
@@ -67,10 +68,11 @@ class Report:
         exceptions = base_report['class']
         report_id = base_report['id']
         commit_hash = ""
+        exception_time = int(base_report['timestamp'])
         if base_report['commit'] is not None:
             commit_hash = base_report['commit']['hash']
         frames = Report._read_frames_from_base(base_report)
-        report = Report(report_id, exceptions, commit_hash, frames)
+        report = Report(report_id, exceptions, commit_hash, frames, exception_time)
 
         return report
 

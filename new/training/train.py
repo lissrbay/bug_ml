@@ -49,7 +49,7 @@ def train(reports_path: str, config_path: str, model_name: Optional[str], cachin
     device = 'cuda' if torch.cuda.is_available() else "cpu"
 
     reports = []
-    for file_name in iterate_reports(reports_path):
+    for file_name in list(iterate_reports(reports_path))[:100]:
         report_path = os.path.join(reports_path, file_name)
         report = Report.load_report(report_path)
         if report.frames:
@@ -82,7 +82,7 @@ def train(reports_path: str, config_path: str, model_name: Optional[str], cachin
     # MetadataFeaturesTransformer(frames_count=config["training"]["max_len"])
 
     if annotations:
-        encoder = ConcatReportEncoders([encoder, AnnotationsEncoder(caching=True, device=device)])
+        encoder = ConcatReportEncoders([encoder, AnnotationsEncoder(device=device)])
 
     tagger = LstmTagger(
         encoder,
