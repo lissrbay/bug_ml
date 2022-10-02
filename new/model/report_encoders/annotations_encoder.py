@@ -10,6 +10,8 @@ from new.model.report_encoders.report_encoder import ReportEncoder
 
 class AnnotationsEncoder(ReportEncoder):
     def __init__(self, caching: bool = False, **kwargs):
+        super().__init__()
+
         self.caching = caching
         self.device = kwargs.get('device', 'cpu')
 

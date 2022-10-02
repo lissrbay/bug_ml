@@ -4,6 +4,7 @@ import logging
 import os
 import sys
 from typing import List, Optional
+sys.path.insert(0, './../../')
 
 import pytorch_lightning
 import torch
@@ -13,13 +14,13 @@ from new.data_aggregation.utils import iterate_reports
 # from new.model.features.annotations_features import AnnotationsFeaturesTransformer
 from new.model.lstm_tagger import LstmTagger
 from new.model.report_encoders.annotations_encoder import AnnotationsEncoder
+from new.model.report_encoders.metadata_features import MetadataFeaturesTransformer
 from new.model.report_encoders.codebert_encoder import RobertaReportEncoder
 from new.model.report_encoders.concat_encoders import ConcatReportEncoders
 from new.model.report_encoders.scaffle_report_encoder import ScaffleReportEncoder
 from new.model.report_encoders.tfidf import TfIdfReportEncoder
 from new.training.torch_training import train_lstm_tagger
 
-sys.path.insert(0, './../../')
 
 loger = logging.getLogger('lightning')
 loger.info(...)
@@ -49,7 +50,7 @@ def train(reports_path: str, config_path: str, model_name: Optional[str], cachin
     device = 'cuda' if torch.cuda.is_available() else "cpu"
 
     reports = []
-    for file_name in list(iterate_reports(reports_path))[:100]:
+    for file_name in list(iterate_reports(reports_path)):
         report_path = os.path.join(reports_path, file_name)
         report = Report.load_report(report_path)
         if report.frames:
@@ -82,7 +83,7 @@ def train(reports_path: str, config_path: str, model_name: Optional[str], cachin
     # MetadataFeaturesTransformer(frames_count=config["training"]["max_len"])
 
     if annotations:
-        encoder = ConcatReportEncoders([encoder, AnnotationsEncoder(device=device)])
+        encoder = ConcatReportEncoders([encoder, AnnotationsEncoder(device=device), MetadataFeaturesTransformer(device=device)], device=device)
 
     tagger = LstmTagger(
         encoder,
