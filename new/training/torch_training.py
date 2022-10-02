@@ -120,7 +120,12 @@ def train_lstm_tagger(tagger: LstmTagger, reports: List[Report], target: List[Li
     if cpkt_path:
         state_dict = torch.load(cpkt_path)["state_dict"]
         model.load_state_dict(state_dict)
-        for param in model.tagger.report_encoder.report_encoders[0].model.parameters():
+        if type(model.tagger.report_encoder) != ReportEncoder:
+            model_parameters = model.tagger.report_encoder.report_encoders[0].model.parameters()
+        else:
+            model_parameters = model.tagger.report_encoder.model.parameters()
+
+        for param in model_parameters:
             param.requires_grad = True
 
     gpus = 1 if device == "cuda" else None
