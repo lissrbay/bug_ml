@@ -1,14 +1,8 @@
 import base64
 import json
 import pickle
-import sys
-from dataclasses import dataclass
 from typing import List, Dict
-
-import attr
-
-from new import data
-
+from dataclasses import dataclass
 
 @dataclass
 class Code:
@@ -16,8 +10,7 @@ class Code:
     end: int
     code: str
 
-
-sys.modules['data'] = data
+import attr
 
 
 @attr.s(frozen=True, auto_attribs=True)
@@ -36,6 +29,7 @@ class Report:
     hash: str
     frames: List[Frame]
     exception_time: int
+    exception_hash: str
 
     @staticmethod
     def _read_frames_from_base(base_report: Dict):
@@ -67,12 +61,14 @@ class Report:
             base_report = json.load(report_io)
         exceptions = base_report['class']
         report_id = base_report['id']
-        commit_hash = ""
         exception_time = int(base_report['timestamp'])
+        commit_hash = base_report['hash']
+        exception_hash = ""
+
         if base_report['commit'] is not None:
-            commit_hash = base_report['commit']['hash']
+            exception_hash = base_report['commit']['hash']
         frames = Report._read_frames_from_base(base_report)
-        report = Report(report_id, exceptions, commit_hash, frames, exception_time)
+        report = Report(report_id, exceptions, commit_hash, frames, exception_time, exception_hash)
 
         return report
 
