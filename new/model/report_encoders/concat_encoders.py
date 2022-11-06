@@ -1,7 +1,7 @@
 from typing import List
 
 import torch
-from torch import Tensor
+from torch import Tensor, nn
 
 from new.data.report import Report
 from new.model.report_encoders.report_encoder import ReportEncoder
@@ -10,8 +10,10 @@ from new.model.report_encoders.report_encoder import ReportEncoder
 
 class ConcatReportEncoders(ReportEncoder):
     def __init__(self, report_encoders: List[ReportEncoder], **kwargs):
+        super().__init__()
+
         assert len(report_encoders) > 0
-        self.report_encoders = report_encoders
+        self.report_encoders = nn.ModuleList(report_encoders)
         self.device = kwargs['device'] if 'device' in kwargs else 'cpu'
 
     def fit(self, reports: List[Report], target: List[List[int]]):

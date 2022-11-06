@@ -10,14 +10,13 @@ from new.model.report_encoders.report_encoder import ReportEncoder
 class MetadataFeaturesTransformer(ReportEncoder):
     def __init__(self, **kwargs):
         super().__init__()
-        self.feature_names = [  # 'exceptions',
+        self.device = kwargs['device']
+        self.feature_names = [ 
             'has_runs',
             'has_dollars',
             'is_parallel',
             'method_file_position',
-            'is_java_standard',
-            'method_stack_position']
-        self.frames_count = kwargs['frames_count']
+            'is_java_standard']
 
     def extract_method_name_features(self, frames: List[Frame], method_name_features):
         for frame in frames:
@@ -37,20 +36,19 @@ class MetadataFeaturesTransformer(ReportEncoder):
     def extract_method_file_position(self, frames: List[Frame], features):
         for frame in frames:
             if 'line' in frame.meta:
-                features.append(0 if frame.meta['line'] is None else int(frame.meta['line']))
+                features['method_file_position'].append(0 if frame.meta['line'] is None else int(frame.meta['line']))
             else:
                 raise Exception('No field line in frame.meta')
+        return features
 
     def encode_report(self, report: Report) -> Tensor:
         features = {k: [] for k in self.feature_names}
-        frames = report.frames[:self.frames_count]
+        frames = report.frames
         features = self.extract_method_name_features(frames, features)
-        # features = self.extract_exception_class(report, features) not use cat feature
         features = self.extract_method_file_position(frames, features)
-        features = self.extract_method_position(frames, features)
         report_features = [torch.FloatTensor(features[name]) for name in self.feature_names]
         report_features = torch.cat(report_features, dim=0).T
-        return report_features
+        return report_features.reshape(len(report.frames), len(features)).to(self.device)
 
     @property
     def dim(self) -> int:
