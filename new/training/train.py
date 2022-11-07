@@ -3,7 +3,11 @@ import json
 import logging
 import os
 import sys
+from pathlib import Path
 from typing import List, Optional
+
+from tqdm import tqdm
+
 sys.path.insert(0, './../../')
 
 import pytorch_lightning
@@ -50,9 +54,8 @@ def train(reports_path: str, config_path: str, model_name: Optional[str], cachin
     device = 'cuda' if torch.cuda.is_available() else "cpu"
 
     reports = []
-    for file_name in list(iterate_reports(reports_path)):
-        report_path = os.path.join(reports_path, file_name)
-        report = Report.load_report(report_path)
+    for file_name in tqdm(list(Path(reports_path).glob("*.report"))):
+        report = Report.load_report_from_json(file_name)
         if report.frames:
             if sum(frame.meta["label"] for frame in report.frames) > 0:
                 reports.append(report)

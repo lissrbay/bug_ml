@@ -23,7 +23,7 @@ class AnnotationsEncoder(ReportEncoder):
         report_times = []
         report_max_time = report.exception_time
         for frame in report.frames:
-            method_max_time = np.max(frame.meta['ts'])
+            method_max_time = np.max(frame.meta['ts'], initial=0)
             has_code = frame.code.code != ''
             if has_code and report_max_time > 0:
                 frame_time = np.log(report_max_time - method_max_time + 1)

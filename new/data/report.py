@@ -1,6 +1,8 @@
+import ast
 import base64
 import json
 import pickle
+from pathlib import Path
 from typing import List, Dict
 from dataclasses import dataclass
 
@@ -76,6 +78,41 @@ class Report:
     def load_report(name: str):
         with open(name, 'rb') as report_io:
             return pickle.load(report_io)
+
+    @staticmethod
+    def load_report_from_json(path: Path):
+        code_path = path.with_suffix('.code')
+
+        with open(code_path) as f:
+            code_json = json.load(f)
+
+        frames = []
+        for frame in code_json['stacktrace']:
+            meta = {
+                'method_name': frame['method_name'],
+                'label': frame['scaffle_label'],
+                'ground_truth': frame['label'],
+                'ts': [anno['ts'] for anno in frame['annotations']],
+                'author': [anno['author'] for anno in frame['annotations']],
+                'line': frame.get('line', None)
+            }
+
+            frames.append(Frame(
+                code=Code(0, 0, ast.literal_eval(frame['code']) if frame['code'] else b''),
+                meta=meta
+            ))
+
+        with open(path) as f:
+            report_json = json.load(f)
+
+        return Report(
+            id=report_json['id'],
+            hash=report_json['hash'],
+            frames=frames,
+            exceptions=[],
+            exception_hash=None,
+            exception_time=report_json['ts']
+        )
 
     def save_report(self, name: str):
         with open(name, 'wb') as report_io:
