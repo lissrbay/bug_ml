@@ -12,7 +12,8 @@
     "training": {
       "max_len": 80,
       "batch_size": 4,
-      "lr": 6e-4
+      "lr": 3e-4, 
+      "max_epoch": 100
     }
   },
   "deep_analyze": {
@@ -28,7 +29,8 @@
     "training": {
       "max_len": 80,
       "batch_size": 4,
-      "lr": 3e-4
+      "lr": 3e-4,
+      "max_epoch": 20
     }
   },
   "bert": {
@@ -39,7 +41,8 @@
     "training": {
       "max_len": 80,
       "batch_size": 4,
-      "lr": 3e-5
+      "lr": 3e-5,
+      "max_epoch": 20
     }
   },
   "code2seq_config_path": "/home/dumtrii/Documents/practos/spring2/code2seq/config/code2seq-java-small.yaml",

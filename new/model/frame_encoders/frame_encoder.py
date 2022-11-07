@@ -6,7 +6,7 @@ import torch
 from new.data.report import Frame, Report
 
 
-class FrameEncoder(ABC):
+class FrameEncoder(ABC, torch.nn.Module):
     def fit(self, reports: List[Report], target: List[List[int]]) -> 'FrameEncoder':
         return self
 
@@ -20,7 +20,7 @@ class FrameEncoder(ABC):
         raise NotImplementedError
 
 
-class ConcatFrameEncoder(FrameEncoder):
+class ConcatFrameEncoder(FrameEncoder, torch.nn.Module):
     def __init__(self, frame_encoders: List[FrameEncoder]):
         self.frame_encoders = frame_encoders
         self._dim = sum(encoder.dim for encoder in self.frame_encoders)

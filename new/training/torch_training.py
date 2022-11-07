@@ -7,6 +7,7 @@ from pytorch_lightning import Trainer
 from pytorch_lightning.callbacks import ModelCheckpoint
 from torch.optim import Adam
 from torchmetrics import MetricCollection
+from new.model.report_encoders.report_encoder import ReportEncoder
 
 from new.data.report import Report
 from new.model.lstm_tagger import LstmTagger
@@ -112,14 +113,19 @@ class TrainingModule(pl.LightningModule):
 
 def train_lstm_tagger(tagger: LstmTagger, reports: List[Report], target: List[List[int]], batch_size: int,
                       max_len: int, model_name: Optional[str], lr: float, caching: bool = False,
-                      cpkt_path: Optional[str] = None, device: str = None) -> LstmTagger:
+                      cpkt_path: Optional[str] = None, device: str = None, max_epoch: int = 20) -> LstmTagger:
     datamodule = ReportsDataModule(reports, target, batch_size, max_len, model_name)
     model = TrainingModule(tagger, lr)
 
     if cpkt_path:
         state_dict = torch.load(cpkt_path)["state_dict"]
         model.load_state_dict(state_dict)
-        for param in model.tagger.report_encoder.model.parameters():
+        if type(model.tagger.report_encoder) != ReportEncoder:
+            model_parameters = model.tagger.report_encoder.report_encoders[0].model.parameters()
+        else:
+            model_parameters = model.tagger.report_encoder.model.parameters()
+
+        for param in model_parameters:
             param.requires_grad = True
 
     gpus = 1 if device == "cuda" else None
@@ -130,7 +136,11 @@ def train_lstm_tagger(tagger: LstmTagger, reports: List[Report], target: List[Li
     )]
 
     if model_name == "bert" and not caching:
-        model.tagger.report_encoder.model.gradient_checkpointing_enable()
+        if type(model.tagger.report_encoder) != ReportEncoder:
+            model.tagger.report_encoder.report_encoders[0].model.gradient_checkpointing_enable()
+        else:
+            model.tagger.report_encoder.model.gradient_checkpointing_enable()
+
         callbacks.append(ZeroCallback())
 
     logs_name = model_name
@@ -139,7 +149,7 @@ def train_lstm_tagger(tagger: LstmTagger, reports: List[Report], target: List[Li
 
     tb_logger = pl_loggers.TensorBoardLogger(save_dir="lightning_logs/", name=logs_name)
 
-    trainer = Trainer(gpus=gpus, callbacks=callbacks, deterministic=True, logger=tb_logger, max_epochs=100)
+    trainer = Trainer(gpus=gpus, callbacks=callbacks, deterministic=True, logger=tb_logger, max_epochs=max_epoch)
 
     trainer.validate(model, datamodule)
     trainer.test(model, datamodule)
