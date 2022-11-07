@@ -12,7 +12,7 @@
     "training": {
       "max_len": 80,
       "batch_size": 4,
-      "lr": 3e-4
+      "lr": 6e-4
     }
   },
   "deep_analyze": {
