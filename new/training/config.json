@@ -42,7 +42,7 @@
       "max_len": 80,
       "batch_size": 4,
       "lr": 3e-5,
-      "max_epoch": 20
+      "max_epoch": 10
     }
   },
   "code2seq_config_path": "/home/dumtrii/Documents/practos/spring2/code2seq/config/code2seq-java-small.yaml",

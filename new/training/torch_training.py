@@ -8,6 +8,7 @@ from pytorch_lightning.callbacks import ModelCheckpoint
 from torch.optim import Adam
 from torchmetrics import MetricCollection
 from new.model.report_encoders.report_encoder import ReportEncoder
+from new.model.report_encoders.concat_encoders import ConcatReportEncoders
 
 from new.data.report import Report
 from new.model.lstm_tagger import LstmTagger
@@ -120,7 +121,7 @@ def train_lstm_tagger(tagger: LstmTagger, reports: List[Report], target: List[Li
     if cpkt_path:
         state_dict = torch.load(cpkt_path)["state_dict"]
         model.load_state_dict(state_dict)
-        if type(model.tagger.report_encoder) != ReportEncoder:
+        if type(model.tagger.report_encoder) == ConcatReportEncoders:
             model_parameters = model.tagger.report_encoder.report_encoders[0].model.parameters()
         else:
             model_parameters = model.tagger.report_encoder.model.parameters()
@@ -136,7 +137,7 @@ def train_lstm_tagger(tagger: LstmTagger, reports: List[Report], target: List[Li
     )]
 
     if model_name == "bert" and not caching:
-        if type(model.tagger.report_encoder) != ReportEncoder:
+        if type(model.tagger.report_encoder) == ConcatReportEncoders:
             model.tagger.report_encoder.report_encoders[0].model.gradient_checkpointing_enable()
         else:
             model.tagger.report_encoder.model.gradient_checkpointing_enable()
@@ -161,7 +162,11 @@ def train_lstm_tagger(tagger: LstmTagger, reports: List[Report], target: List[Li
 class ZeroCallback(pl.Callback):
     def on_after_backward(self, trainer, pl_module):
         layer_names = ["11", "10"]
-        for name, param in pl_module.tagger.report_encoder.model.named_parameters():
+        if type(pl_module.tagger.report_encoder) == ConcatReportEncoders:
+            parameters = pl_module.tagger.report_encoder.report_encoders[0].model.named_parameters()
+        else:
+            parameters = pl_module.tagger.report_encoder.model.named_parameters()
+        for name, param in parameters:
             if all(x not in name for x in layer_names):
                 if param.grad is not None:
                     param.grad *= 0
