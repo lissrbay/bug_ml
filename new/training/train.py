@@ -42,17 +42,7 @@ def make_target(reports: List[Report], label_style: Optional[str]) -> List[List[
     return targets
 
 
-def train(reports_path: str, config_path: str, model_name: Optional[str], caching: bool = False,
-          annotations: bool = False, checkpoint_path: Optional[str] = None):
-    print(f"Model name: {model_name}")
-    seed = 9219321
-
-    pytorch_lightning.seed_everything(seed, workers=True)
-    torch.backends.cudnn.deterministic = True
-    torch.backends.cudnn.benchmark = False
-
-    device = 'cuda' if torch.cuda.is_available() else "cpu"
-
+def read_reports(reports_path, model_name):
     reports = []
     for file_name in tqdm(list(Path(reports_path).glob("*.report"))):
         report = Report.load_report_from_json(file_name)
@@ -64,9 +54,11 @@ def train(reports_path: str, config_path: str, model_name: Optional[str], cachin
 
     target = make_target(reports, model_name)
 
-    with open(config_path, "r") as f:
-        config = json.load(f)
+    return reports, target
 
+
+def init_model(model_name, config, caching, reports, target):
+    device = 'cuda' if torch.cuda.is_available() else "cpu"
     max_len = config[model_name]["training"]["max_len"]
     if model_name == "scaffle":
         encoder = ScaffleReportEncoder(**config[model_name]["encoder"]).fit(reports, target)
@@ -80,14 +72,6 @@ def train(reports_path: str, config_path: str, model_name: Optional[str], cachin
     else:
         raise ValueError(f"Wrong model type")
 
-    # path_to_precomputed_embs="/home/lissrbay/Загрузки/code2seq_embs"),
-    # GitFeaturesTransformer(
-    #    frames_count=config["training"]["max_len"]).fit(reports, target),
-    # MetadataFeaturesTransformer(frames_count=config["training"]["max_len"])
-
-    if annotations:
-        encoder = ConcatReportEncoders([encoder, AnnotationsEncoder(device=device), MetadataFeaturesTransformer(device=device)], device=device)
-
     tagger = LstmTagger(
         encoder,
         max_len=max_len,
@@ -95,6 +79,35 @@ def train(reports_path: str, config_path: str, model_name: Optional[str], cachin
         device=device,
         **config[model_name]["tagger"]
     )
+
+    return tagger
+
+
+def train(reports_path: str, config_path: str, model_name: Optional[str], caching: bool = False,
+          annotations: bool = False, checkpoint_path: Optional[str] = None):
+    print(f"Model name: {model_name}")
+    seed = 9219321
+
+    pytorch_lightning.seed_everything(seed, workers=True)
+    torch.backends.cudnn.deterministic = True
+    torch.backends.cudnn.benchmark = False
+
+    device = 'cuda' if torch.cuda.is_available() else "cpu"
+
+    reports, target = read_reports(reports_path, model_name)
+
+    with open(config_path, "r") as f:
+        config = json.load(f)
+
+    tagger = init_model(model_name, config, caching, reports, target)
+
+    # path_to_precomputed_embs="/home/lissrbay/Загрузки/code2seq_embs"),
+    # GitFeaturesTransformer(
+    #    frames_count=config["training"]["max_len"]).fit(reports, target),
+    # MetadataFeaturesTransformer(frames_count=config["training"]["max_len"])
+
+    #if annotations:
+    #    encoder = ConcatReportEncoders([encoder, AnnotationsEncoder(device=device), MetadataFeaturesTransformer(device=device)], device=device)
 
     tagger = train_lstm_tagger(tagger, reports, target, caching=caching, model_name=model_name,
                                cpkt_path=checkpoint_path, **config[model_name]["training"], device=device)
