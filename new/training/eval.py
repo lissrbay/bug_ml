@@ -65,7 +65,7 @@ def eval_models(reports_path, logdir, config_path):
 
         datamodule = ReportsDataModule(reports, target, train_params['batch_size'], train_params['max_len'], model_name)
         logs_name = model_name
-        tb_logger = pl_loggers.TensorBoardLogger(save_dir="/Users/e.poslovskaya/bug_ml_copy_2/bug_ml_copy_2/new/training/lightning_logs_test/", name=logs_name)
+        tb_logger = pl_loggers.TensorBoardLogger(save_dir="./lightning_logs_test/", name=logs_name)
         gpus = None
 
         caching = "caching" in model_name
@@ -79,16 +79,39 @@ def eval_models(reports_path, logdir, config_path):
         trainer.test(model, datamodule)
 
 
+def eval_baseline(reports_path):
+    reports, target = read_reports(reports_path, "baseline")
+    datamodule = ReportsDataModule(reports, target, batch_size=64, max_len=80, label_style="baseline")
+    datamodule.setup()
+    tb_logger = pl_loggers.TensorBoardLogger(
+        save_dir="./lightning_logs_test/", name="baseline_community")
+    acc = {'accuracy@1': 0, 'accuracy@3': 0, 'accuracy@5': 0}
+    c = 0
+    for reports_batch, targets_batch, _ in datamodule.test_dataloader():
+        for i in acc.keys():
+            top_k = int(i.split("@")[1])
+            for t in targets_batch:
+                if sum(t[:top_k]) > 0:
+                    acc[i] += 1
+        c += len(reports_batch)
+
+    for k in acc.keys():
+        acc[k] /= c
+
+    print(acc)
+    tb_logger.log_metrics(acc)
+
+
 def main():
     parser = argparse.ArgumentParser()
     parser.add_argument("--reports_path", type=str)
     parser.add_argument("--logdir", type=str)
-    parser.add_argument("--config_path", type=str, default="/Users/e.poslovskaya/bug_ml_copy_2/bug_ml_copy_2/new/training/config.json")
+    parser.add_argument("--config_path", type=str, default="./config.json")
 
     args = parser.parse_args()
 
-    eval_models(args.reports_path, args.logdir, args.config_path)
-
+    #eval_models(args.reports_path, args.logdir, args.config_path)
+    eval_baseline(args.reports_path)
 
 if __name__ == '__main__':
     main()
