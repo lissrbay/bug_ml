@@ -79,6 +79,13 @@ def eval_models(reports_path, logdir, config_path):
         trainer.test(model, datamodule)
 
 
+def eval_baseline(reports_path, logdir, config_path):
+    reports, target = read_reports(reports_path, "baseline")
+    datamodule = ReportsDataModule(reports, target, 64, 80, "baseline")
+    trainer = Trainer(gpus=gpus, callbacks=None, deterministic=True, logger=tb_logger, max_epochs=1)
+    trainer.test(model, datamodule)
+
+
 def main():
     parser = argparse.ArgumentParser()
     parser.add_argument("--reports_path", type=str)

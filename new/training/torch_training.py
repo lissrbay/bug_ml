@@ -13,7 +13,7 @@ from new.model.report_encoders.concat_encoders import ConcatReportEncoders
 from new.data.report import Report
 from new.model.lstm_tagger import LstmTagger
 from new.training.data import ReportsDataModule
-from new.training.metrics import Precision, Recall, TopkAccuracy
+from new.training.metrics import Precision, Recall, TopkAccuracy, TopkAccuracy3, TopkAccuracy5, BootStrapper
 
 from pytorch_lightning import loggers as pl_loggers
 
@@ -22,10 +22,14 @@ class TrainingModule(pl.LightningModule):
     def __init__(self, tagger: LstmTagger, lr: float = 1e-5):
         super().__init__()
         self.tagger = tagger
-
-        self.train_metrics = MetricCollection([Precision(), Recall(), TopkAccuracy(1)], prefix="train/")
-        self.val_metrics = MetricCollection([Precision(), Recall(), TopkAccuracy(1)], prefix="val/")
-        self.test_metrics = MetricCollection([Precision(), Recall(), TopkAccuracy(1)], prefix="test/")
+        bootstrap_func = lambda x: BootStrapper(x, num_bootstraps=100, prefix=x.name)
+        bootstrap_prefixes = ['Precision', 'Recall', 'TopkAccuracy', 'TopkAccuracy3', 'TopkAccuracy5']
+        self.train_metrics = MetricCollection(dict(zip(bootstrap_prefixes, list(map(bootstrap_func, 
+        [Precision(), Recall(), TopkAccuracy(1), TopkAccuracy3(1), TopkAccuracy5(1)])))), prefix="train/")
+        self.val_metrics = MetricCollection(dict(zip(bootstrap_prefixes, list(map(bootstrap_func,
+         [Precision(), Recall(), TopkAccuracy(1), TopkAccuracy3(1), TopkAccuracy5(1)])))), prefix="val/")
+        self.test_metrics = MetricCollection(dict(zip(bootstrap_prefixes, list(map(bootstrap_func, 
+        [Precision(), Recall(), TopkAccuracy(1), TopkAccuracy3(1), TopkAccuracy5(1)])))), prefix="test/")
 
         self.softmax = torch.nn.Softmax(dim=-1)
         self.mseloss = torch.nn.MSELoss()
@@ -132,7 +136,7 @@ def train_lstm_tagger(tagger: LstmTagger, reports: List[Report], target: List[Li
     gpus = 1 if device == "cuda" else None
 
     callbacks = [ModelCheckpoint(
-        monitor="val/TopkAccuracy",
+        monitor="val/TopkAccuracy_mean",
         mode="max"
     )]
 
