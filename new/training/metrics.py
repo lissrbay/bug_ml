@@ -15,7 +15,7 @@ from torchmetrics.utilities import apply_to_collection
 
 def _bootstrap_sampler(
     size: int,
-    sampling_strategy: str = "poisson",
+    sampling_strategy: str = "multinomial",
 ) -> Tensor:
     if sampling_strategy == "poisson":
         p = torch.distributions.Poisson(1)
@@ -96,9 +96,13 @@ class BootStrapper(Metric):
         if self.std:
             output_dict[self.prefix + "_std"] = computed_vals.std(dim=0)
         if self.quantile is not None:
-            output_dict["quantile"] = torch.quantile(computed_vals, self.quantile)
-        if self.raw:
-            output_dict["raw"] = computed_vals
+            low_q = round(self.quantile/2, 3)
+            high_q = round(1-self.quantile/2, 3)
+            output_dict[f"quantile_{low_q}"] = torch.quantile(computed_vals, self.quantile/2, interpolation='lower')
+            output_dict[f"quantile_{high_q}"] = torch.quantile(computed_vals, 1-self.quantile/2, interpolation='lower')
+
+        #if self.raw:
+        output_dict["raw"] = computed_vals
         return output_dict
 
 
@@ -164,7 +168,7 @@ class TopkAccuracy(Metric):
         self.add_state("tp_acc", default=torch.tensor(0).float(), dist_reduce_fx="sum")
         self.add_state("total_acc", default=torch.tensor(0).float(), dist_reduce_fx="sum")
         self.k = k
-        self.name = "TopkAccuracy"
+        self.name = f"TopkAccuracy_{k}"
 
     def update(self, preds: torch.Tensor, target: torch.Tensor, mask: torch.Tensor, scores: torch.Tensor):
         preds = preds * mask.float()

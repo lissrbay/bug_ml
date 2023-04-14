@@ -13,7 +13,7 @@ from new.model.report_encoders.concat_encoders import ConcatReportEncoders
 from new.data.report import Report
 from new.model.lstm_tagger import LstmTagger
 from new.training.data import ReportsDataModule
-from new.training.metrics import Precision, Recall, TopkAccuracy, TopkAccuracy3, TopkAccuracy5, BootStrapper
+from new.training.metrics import Precision, Recall, TopkAccuracy, BootStrapper
 
 from pytorch_lightning import loggers as pl_loggers
 
@@ -22,14 +22,14 @@ class TrainingModule(pl.LightningModule):
     def __init__(self, tagger: LstmTagger, lr: float = 1e-5):
         super().__init__()
         self.tagger = tagger
-        bootstrap_func = lambda x: BootStrapper(x, num_bootstraps=100, prefix=x.name)
-        bootstrap_prefixes = ['Precision', 'Recall', 'TopkAccuracy', 'TopkAccuracy3', 'TopkAccuracy5']
+        bootstrap_func = lambda x: BootStrapper(x, num_bootstraps=100, prefix=x.name, quantile=0.01)
+        bootstrap_prefixes = ['Precision', 'Recall', 'TopkAccuracy', 'TopkAccuracy3', 'TopkAccuracy5', 'TopkAccuracy_monitor']
         self.train_metrics = MetricCollection(dict(zip(bootstrap_prefixes, list(map(bootstrap_func, 
-        [Precision(), Recall(), TopkAccuracy(1), TopkAccuracy3(1), TopkAccuracy5(1)])))), prefix="train/")
-        self.val_metrics = MetricCollection(dict(zip(bootstrap_prefixes, list(map(bootstrap_func,
-         [Precision(), Recall(), TopkAccuracy(1), TopkAccuracy3(1), TopkAccuracy5(1)])))), prefix="val/")
+        [Precision(), Recall(), TopkAccuracy(1), TopkAccuracy(3), TopkAccuracy(5)])) + [TopkAccuracy(1)])), prefix="train/")
+        self.val_metrics = MetricCollection(dict(zip(bootstrap_prefixes, list(map(bootstrap_func, 
+        [Precision(), Recall(), TopkAccuracy(1), TopkAccuracy(3), TopkAccuracy(5)])) + [TopkAccuracy(1)])), prefix="val/")
         self.test_metrics = MetricCollection(dict(zip(bootstrap_prefixes, list(map(bootstrap_func, 
-        [Precision(), Recall(), TopkAccuracy(1), TopkAccuracy3(1), TopkAccuracy5(1)])))), prefix="test/")
+        [Precision(), Recall(), TopkAccuracy(1), TopkAccuracy(3), TopkAccuracy(5)])) + [TopkAccuracy(1)])), prefix="test/")
 
         self.softmax = torch.nn.Softmax(dim=-1)
         self.mseloss = torch.nn.MSELoss()
@@ -97,14 +97,16 @@ class TrainingModule(pl.LightningModule):
 
     def validation_epoch_end(self, outputs: List[Any]) -> None:
         super().validation_epoch_end(outputs)
-        self.log_dict(self.val_metrics.compute())
-        print(self.val_metrics.compute())
+        metrics_dict = self.val_metrics.compute()
+        self.log_dict(metrics_dict)
+        print(metrics_dict)
         self.val_metrics.reset()
 
     def test_epoch_end(self, outputs: List[Any]) -> None:
         super().test_epoch_end(outputs)
-        self.log_dict(self.test_metrics.compute())
-        print(self.test_metrics.compute())
+        metrics_dict = self.test_metrics.compute()
+        self.log_dict(metrics_dict)
+        print(metrics_dict)
         self.test_metrics.reset()
 
     def training_epoch_end(self, outputs: List[Any]) -> None:
@@ -136,7 +138,7 @@ def train_lstm_tagger(tagger: LstmTagger, reports: List[Report], target: List[Li
     gpus = 1 if device == "cuda" else None
 
     callbacks = [ModelCheckpoint(
-        monitor="val/TopkAccuracy_mean",
+        monitor="val/TopkAccuracy_monitor",
         mode="max"
     )]
 
