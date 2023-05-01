@@ -98,11 +98,11 @@ class BootStrapper(Metric):
         if self.quantile is not None:
             low_q = round(self.quantile/2, 3)
             high_q = round(1-self.quantile/2, 3)
-            output_dict[f"quantile_{low_q}"] = torch.quantile(computed_vals, self.quantile/2, interpolation='lower')
-            output_dict[f"quantile_{high_q}"] = torch.quantile(computed_vals, 1-self.quantile/2, interpolation='lower')
+            output_dict[self.prefix + f"quantile_{low_q}"] = torch.quantile(computed_vals, self.quantile/2, interpolation='lower')
+            output_dict[self.prefix + f"quantile_{high_q}"] = torch.quantile(computed_vals, 1-self.quantile/2, interpolation='lower')
 
         #if self.raw:
-        output_dict["raw"] = computed_vals
+        output_dict[self.prefix + "/raw"] = computed_vals
         return output_dict
 
 

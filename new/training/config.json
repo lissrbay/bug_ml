@@ -11,7 +11,7 @@
     },
     "training": {
       "max_len": 80,
-      "batch_size": 4,
+      "batch_size": 1,
       "lr": 3e-4, 
       "max_epoch": 100
     }
@@ -40,7 +40,7 @@
     },
     "training": {
       "max_len": 80,
-      "batch_size": 4,
+      "batch_size": 1,
       "lr": 3e-5,
       "max_epoch": 10
     }
