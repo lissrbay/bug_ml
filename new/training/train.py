@@ -71,7 +71,7 @@ def init_model(model_name, config, caching, reports, target):
                 param.requires_grad = False
     else:
         raise ValueError(f"Wrong model type")
-    encoder = ConcatReportEncoders([ RobertaReportEncoder(frames_count=max_len, caching=True, device=device), ScaffleReportEncoder(**config[model_name]["encoder"]).fit(reports, target)], device=device)
+   #encoder = ConcatReportEncoders([ RobertaReportEncoder(frames_count=max_len, caching=True, device=device), ScaffleReportEncoder(**config[model_name]["encoder"]).fit(reports, target)], device=device)
 
     tagger = LstmTagger(
         encoder,

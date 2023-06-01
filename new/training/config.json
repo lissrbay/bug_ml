@@ -13,7 +13,7 @@
       "max_len": 80,
       "batch_size": 1,
       "lr": 3e-4, 
-      "max_epoch": 100
+      "max_epoch": 70
     }
   },
   "deep_analyze": {
@@ -40,9 +40,9 @@
     },
     "training": {
       "max_len": 80,
-      "batch_size": 1,
+      "batch_size": 4,
       "lr": 3e-5,
-      "max_epoch": 10
+      "max_epoch": 3
     }
   },
   "code2seq_config_path": "/home/dumtrii/Documents/practos/spring2/code2seq/config/code2seq-java-small.yaml",

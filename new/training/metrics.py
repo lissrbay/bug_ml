@@ -4,6 +4,7 @@ import torch
 from torchmetrics import Metric
 from copy import deepcopy
 from typing import Any, Dict, Optional, Union
+import numpy as np
 
 import torch
 from torch import Tensor
@@ -12,19 +13,6 @@ from torch.nn import ModuleList
 from torchmetrics.metric import Metric
 from torchmetrics.utilities import apply_to_collection
 
-
-def _bootstrap_sampler(
-    size: int,
-    sampling_strategy: str = "multinomial",
-) -> Tensor:
-    if sampling_strategy == "poisson":
-        p = torch.distributions.Poisson(1)
-        n = p.sample((size,))
-        return torch.arange(size).repeat_interleave(n.long(), dim=0)
-    if sampling_strategy == "multinomial":
-        idx = torch.multinomial(torch.ones(size), num_samples=size, replacement=True)
-        return idx
-    raise ValueError("Unknown sampling strategy")
 
 
 class BootStrapper(Metric):
@@ -50,38 +38,44 @@ class BootStrapper(Metric):
 
         self.metrics = ModuleList([deepcopy(base_metric) for _ in range(num_bootstraps)])
         self.num_bootstraps = num_bootstraps
+        self.preds_vals = []
+        self.targets_vals = []
+        self.masks_vals = []
+        self.scores_vals = []
 
         self.mean = mean
         self.std = std
         self.quantile = quantile
         self.raw = raw
         self.prefix = prefix
-        allowed_sampling = ("poisson", "multinomial")
-        if sampling_strategy not in allowed_sampling:
-            raise ValueError(
-                f"Expected argument ``sampling_strategy`` to be one of {allowed_sampling}"
-                f" but recieved {sampling_strategy}"
-            )
         self.sampling_strategy = sampling_strategy
 
-    def update(self, *args: Any, **kwargs: Any) -> None:
-        """Updates the state of the base metric.
+    def update(self, preds: torch.Tensor, target: torch.Tensor, mask: torch.Tensor, scores: torch.Tensor, **kwargs) -> None:
+        self.preds_vals.extend(preds)
+        self.targets_vals.extend(target)
+        self.masks_vals.extend(mask)
+        self.scores_vals.extend(scores)
 
-        Any tensor passed in will be bootstrapped along dimension 0.
-        """
-        for idx in range(self.num_bootstraps):
-            args_sizes = apply_to_collection(args, Tensor, len)
-            kwargs_sizes = list(apply_to_collection(kwargs, Tensor, len))
-            if len(args_sizes) > 0:
-                size = args_sizes[0]
-            elif len(kwargs_sizes) > 0:
-                size = kwargs_sizes[0]
-            else:
-                raise ValueError("None of the input contained tensors, so could not determine the sampling size")
-            sample_idx = _bootstrap_sampler(size, sampling_strategy=self.sampling_strategy).to(self.device)
-            new_args = apply_to_collection(args, Tensor, torch.index_select, dim=0, index=sample_idx)
-            new_kwargs = apply_to_collection(kwargs, Tensor, torch.index_select, dim=0, index=sample_idx)
-            self.metrics[idx].update(*new_args, **new_kwargs)
+    def bootstrap(self, preds, target, masks, scores):
+        preds = torch.unsqueeze(preds, dim=1)
+        target = torch.unsqueeze(target, dim=1)
+        masks = torch.unsqueeze(masks, dim=1)
+        scores = torch.unsqueeze(scores, dim=1)
+
+        bootstraped_metrics = []
+        for i in range(10):
+            bootstraped_ids = np.random.choice(len(preds), len(preds), replace=True)
+            bd_preds, bd_targets, bd_masks, bd_scores = preds[bootstraped_ids], target[bootstraped_ids], masks[bootstraped_ids], scores[bootstraped_ids, :]
+            print(bd_preds)
+            print(bd_scores)
+            for m in self.metrics:
+                m.update(bd_preds, bd_targets, bd_masks, scores=bd_scores)
+            computed_vals = torch.stack([m.compute() for m in self.metrics], dim=0)
+            for m in self.metrics:
+                m.reset()
+            bootstraped_metrics.extend(torch.unsqueeze(computed_vals, dim=0))
+        print(bootstraped_metrics)
+        return torch.cat(bootstraped_metrics, dim=0)
 
     def compute(self) -> Dict[str, Tensor]:
         """Computes the bootstrapped metric values.
@@ -89,7 +83,9 @@ class BootStrapper(Metric):
         Always returns a dict of tensors, which can contain the following keys: ``mean``, ``std``, ``quantile`` and
         ``raw`` depending on how the class was initialized.
         """
-        computed_vals = torch.stack([m.compute() for m in self.metrics], dim=0)
+        computed_vals = self.bootstrap(torch.cat(self.preds_vals, dim=0), torch.cat(self.targets_vals, dim=0), 
+        torch.cat(self.masks_vals, dim=0), torch.cat(self.scores_vals, dim=0))
+        
         output_dict = {}
         if self.mean:
             output_dict[self.prefix + "_mean"] = computed_vals.mean(dim=0)
@@ -175,9 +171,11 @@ class TopkAccuracy(Metric):
         scores = scores * mask.float().unsqueeze(-1)
         target = target * mask
         # scores = scores * preds.unsqueeze(-1)
+       #print(target, scores, mask)
         scores = scores[:, :, 1]
 
         inds = scores.topk(self.k, dim=0).indices
+        #print( inds.shape)
         gathered = torch.gather(target, 0, inds).sum(0) > 0
 
         # if torch.sum(gathered) > 2:

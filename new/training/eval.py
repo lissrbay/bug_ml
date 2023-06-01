@@ -1,31 +1,34 @@
 import os
-
+import sys 
+sys.path.insert(0, './../../')
 import torch
 from torchmetrics import MetricCollection
 from typing import List, Any, Optional
-from model.lstm_tagger import LstmTagger
+from new.model.lstm_tagger import LstmTagger
 from new.training.data import ReportsDataModule
 import argparse
 import glob
 import json
 
-from training.torch_training import TrainingModule
-from training.train import read_reports, init_model
+from new.training.torch_training import TrainingModule
+from new.training.train import read_reports, init_model
 from pytorch_lightning import loggers as pl_loggers, Trainer
 import pytorch_lightning as pl
 from new.training.metrics import Precision, Recall, TopkAccuracy
 
 
-class EvalModule(pl.LightningModule):
+class EvalModule(TrainingModule):
     def __init__(self, tagger: LstmTagger, lr: float = 1e-5):
         super().__init__()
         self.tagger = tagger
-        self.val_metrics = MetricCollection([Precision(), Recall(),
-                                             TopkAccuracy(1), TopkAccuracy(3), TopkAccuracy(5)],
-                                            prefix="val/")
-        self.test_metrics = MetricCollection([Precision(), Recall(),
-                                              TopkAccuracy(1), TopkAccuracy(3), TopkAccuracy(5)],
-                                             prefix="test/")
+        bootstrap_func = lambda x: BootStrapper(x, num_bootstraps=100, prefix=x.name, quantile=0.01)
+        bootstrap_prefixes = ['Precision', 'Recall', 'TopkAccuracy', 'TopkAccuracy3', 'TopkAccuracy5']
+        self.train_metrics = MetricCollection(dict(zip(bootstrap_prefixes, list(map(bootstrap_func, 
+        [Precision(), Recall(), TopkAccuracy(1), TopkAccuracy(3), TopkAccuracy(5)])))), prefix="train/")
+        self.val_metrics = MetricCollection(dict(zip(bootstrap_prefixes, list(map(bootstrap_func, 
+        [Precision(), Recall(), TopkAccuracy(1), TopkAccuracy(3), TopkAccuracy(5)])))), prefix="val/")
+        self.test_metrics = MetricCollection(dict(zip(bootstrap_prefixes, list(map(bootstrap_func, 
+        [Precision(), Recall(), TopkAccuracy(1), TopkAccuracy(3), TopkAccuracy(5)])))), prefix="test/")
 
     def validation_step(self, batch, *args):
         loss = self.calculate_step(batch, self.val_metrics)
@@ -65,15 +68,15 @@ def eval_models(reports_path, logdir, config_path):
 
         datamodule = ReportsDataModule(reports, target, train_params['batch_size'], train_params['max_len'], model_name)
         logs_name = model_name
-        tb_logger = pl_loggers.TensorBoardLogger(save_dir="/Users/e.poslovskaya/bug_ml_copy_2/bug_ml_copy_2/new/training/lightning_logs_test/", name=logs_name)
-        gpus = None
+        tb_logger = pl_loggers.TensorBoardLogger(save_dir="./lightning_logs_test/", name=logs_name)
+        gpus = 1
 
         caching = "caching" in model_name
         tagger = init_model(config_name, config, caching, reports, target)
 
         model = TrainingModule(tagger)
         cpkt_path = list(glob.glob(os.path.join(last_model_run, "checkpoints", "*")))[-1]
-        state_dict = torch.load(cpkt_path, map_location=torch.device('cpu'))["state_dict"]
+        state_dict = torch.load(cpkt_path, map_location=torch.device('cuda:0'))["state_dict"]
         model.load_state_dict(state_dict)
         trainer = Trainer(gpus=gpus, callbacks=None, deterministic=True, logger=tb_logger, max_epochs=1)
         trainer.test(model, datamodule)

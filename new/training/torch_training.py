@@ -29,7 +29,7 @@ class TrainingModule(pl.LightningModule):
         self.val_metrics = MetricCollection(dict(zip(bootstrap_prefixes, list(map(bootstrap_func, 
         [Precision(), Recall(), TopkAccuracy(1), TopkAccuracy(3), TopkAccuracy(5)])) + [TopkAccuracy(1)])), prefix="val/")
         self.test_metrics = MetricCollection(dict(zip(bootstrap_prefixes, list(map(bootstrap_func, 
-        [Precision(), Recall(), TopkAccuracy(1), TopkAccuracy(3), TopkAccuracy(5)])) + [TopkAccuracy(1)])), prefix="test/")
+        [Precision(), Recall(), TopkAccuracy(1), TopkAccuracy(3), TopkAccuracy(5)])))), prefix="test/")
 
         self.softmax = torch.nn.Softmax(dim=-1)
         self.mseloss = torch.nn.MSELoss()
@@ -77,7 +77,6 @@ class TrainingModule(pl.LightningModule):
 
         if self.tagger.scaffle:
             target = self.build_scaffle_labels(reports, target)
-
         metrics.update(preds, target, mask, scores=scores)
 
         return loss
