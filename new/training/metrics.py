@@ -51,30 +51,27 @@ class BootStrapper(Metric):
         self.sampling_strategy = sampling_strategy
 
     def update(self, preds: torch.Tensor, target: torch.Tensor, mask: torch.Tensor, scores: torch.Tensor, **kwargs) -> None:
-        self.preds_vals.extend(preds)
-        self.targets_vals.extend(target)
-        self.masks_vals.extend(mask)
-        self.scores_vals.extend(scores)
+        #print(preds.shape)
+        self.preds_vals.append(preds)
+        self.targets_vals.append(target)
+        self.masks_vals.append(mask)
+        self.scores_vals.append(scores)
 
     def bootstrap(self, preds, target, masks, scores):
-        preds = torch.unsqueeze(preds, dim=1)
-        target = torch.unsqueeze(target, dim=1)
-        masks = torch.unsqueeze(masks, dim=1)
-        scores = torch.unsqueeze(scores, dim=1)
-
         bootstraped_metrics = []
         for i in range(10):
-            bootstraped_ids = np.random.choice(len(preds), len(preds), replace=True)
-            bd_preds, bd_targets, bd_masks, bd_scores = preds[bootstraped_ids], target[bootstraped_ids], masks[bootstraped_ids], scores[bootstraped_ids, :]
-            print(bd_preds)
-            print(bd_scores)
+            bootstraped_ids = np.random.choice(preds.shape[1], preds.shape[1], replace=True)
+            bd_preds, bd_targets, bd_masks, bd_scores = (preds[:, bootstraped_ids], target[:, bootstraped_ids], 
+            masks[:, bootstraped_ids], scores[:, bootstraped_ids])
+            #print(bd_preds)
+            #print(bd_scores)
             for m in self.metrics:
                 m.update(bd_preds, bd_targets, bd_masks, scores=bd_scores)
             computed_vals = torch.stack([m.compute() for m in self.metrics], dim=0)
             for m in self.metrics:
                 m.reset()
             bootstraped_metrics.extend(torch.unsqueeze(computed_vals, dim=0))
-        print(bootstraped_metrics)
+        #print(bootstraped_metrics)
         return torch.cat(bootstraped_metrics, dim=0)
 
     def compute(self) -> Dict[str, Tensor]:
@@ -83,8 +80,8 @@ class BootStrapper(Metric):
         Always returns a dict of tensors, which can contain the following keys: ``mean``, ``std``, ``quantile`` and
         ``raw`` depending on how the class was initialized.
         """
-        computed_vals = self.bootstrap(torch.cat(self.preds_vals, dim=0), torch.cat(self.targets_vals, dim=0), 
-        torch.cat(self.masks_vals, dim=0), torch.cat(self.scores_vals, dim=0))
+        computed_vals = self.bootstrap(torch.cat(self.preds_vals, dim=1), torch.cat(self.targets_vals, dim=1), 
+        torch.cat(self.masks_vals, dim=1), torch.cat(self.scores_vals, dim=1))
         
         output_dict = {}
         if self.mean:
@@ -98,7 +95,7 @@ class BootStrapper(Metric):
             output_dict[self.prefix + f"quantile_{high_q}"] = torch.quantile(computed_vals, 1-self.quantile/2, interpolation='lower')
 
         #if self.raw:
-        output_dict[self.prefix + "/raw"] = computed_vals
+        #output_dict[self.prefix + "/raw"] = computed_vals
         return output_dict
 
 
@@ -171,7 +168,7 @@ class TopkAccuracy(Metric):
         scores = scores * mask.float().unsqueeze(-1)
         target = target * mask
         # scores = scores * preds.unsqueeze(-1)
-       #print(target, scores, mask)
+        #print(target, scores, mask)
         scores = scores[:, :, 1]
 
         inds = scores.topk(self.k, dim=0).indices
