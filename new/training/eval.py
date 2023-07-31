@@ -73,7 +73,7 @@ def eval_models(reports_path, logdir, config_path):
 
         caching = "caching" in model_name
         tagger = init_model(config_name, config, caching, reports, target)
-        model = TrainingModule(tagger, logs_save_path = "./l_logs_private/"  + model_name + '/' + last_model_run.split('/')[-1] + '/')
+        model = TrainingModule(tagger, logs_save_path = "./bs_logs_private/"  + model_name + '/' + last_model_run.split('/')[-1] + '/')
         cpkt_path = list(glob.glob(os.path.join(last_model_run, "checkpoints", "*")))[-1]
         state_dict = torch.load(cpkt_path, map_location=torch.device('cuda:0'))["state_dict"]
         model.load_state_dict(state_dict)
