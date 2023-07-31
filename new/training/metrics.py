@@ -28,6 +28,8 @@ class BootStrapper(Metric):
         raw: bool = False,
         sampling_strategy: str = "poisson",
         prefix: str = '',
+        model_name: str = '',
+        logs_save_path: str = '',
         **kwargs: Any,
     ) -> None:
         super().__init__(**kwargs)
@@ -42,7 +44,7 @@ class BootStrapper(Metric):
         self.targets_vals = []
         self.masks_vals = []
         self.scores_vals = []
-
+        self.logs_save_path = logs_save_path
         self.mean = mean
         self.std = std
         self.quantile = quantile
@@ -93,9 +95,18 @@ class BootStrapper(Metric):
             high_q = round(1-self.quantile/2, 3)
             output_dict[self.prefix + f"quantile_{low_q}"] = torch.quantile(computed_vals, self.quantile/2, interpolation='lower')
             output_dict[self.prefix + f"quantile_{high_q}"] = torch.quantile(computed_vals, 1-self.quantile/2, interpolation='lower')
+            import os
+            if not os.path.exists(self.logs_save_path):
+                os.makedirs(self.logs_save_path)
+            torch.save(torch.cat(self.preds_vals, dim=1), self.logs_save_path + 'preds.pt')
+            torch.save(torch.cat(self.targets_vals, dim=1), self.logs_save_path + 'targets_vals.pt')
+            torch.save(torch.cat(self.masks_vals, dim=1), self.logs_save_path + 'masks_vals.pt')
+            torch.save(torch.cat(self.scores_vals, dim=1), self.logs_save_path + 'scores_vals.pt')
 
-        #if self.raw:
-        #output_dict[self.prefix + "/raw"] = computed_vals
+        self.preds_vals = []
+        self.targets_vals = []
+        self.masks_vals = []
+        self.scores_vals = []
         return output_dict
 
 

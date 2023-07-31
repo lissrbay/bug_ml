@@ -19,10 +19,10 @@ from pytorch_lightning import loggers as pl_loggers
 
 
 class TrainingModule(pl.LightningModule):
-    def __init__(self, tagger: LstmTagger, lr: float = 1e-5):
+    def __init__(self, tagger: LstmTagger, lr: float = 1e-5, logs_save_path=''):
         super().__init__()
         self.tagger = tagger
-        bootstrap_func = lambda x: BootStrapper(x, num_bootstraps=100, prefix=x.name, quantile=0.01)
+        bootstrap_func = lambda x: BootStrapper(x, num_bootstraps=100, prefix=x.name, quantile=0.01, logs_save_path=logs_save_path)
         bootstrap_prefixes = ['Precision', 'Recall', 'TopkAccuracy', 'TopkAccuracy3', 'TopkAccuracy5', 'TopkAccuracy_monitor']
         self.train_metrics = MetricCollection(dict(zip(bootstrap_prefixes, list(map(bootstrap_func, 
         [Precision(), Recall(), TopkAccuracy(1), TopkAccuracy(3), TopkAccuracy(5)])) + [TopkAccuracy(1)])), prefix="train/")
@@ -98,13 +98,22 @@ class TrainingModule(pl.LightningModule):
         super().validation_epoch_end(outputs)
         metrics_dict = self.val_metrics.compute()
         self.log_dict(metrics_dict)
+        for m_set in list(metrics_dict.keys()):
+            for m in m_set:
+                if not (('mean' in m) or ('quantile' in m)):
+                    metrics_dict.pop(m, None)
         print(metrics_dict)
+
         self.val_metrics.reset()
 
     def test_epoch_end(self, outputs: List[Any]) -> None:
         super().test_epoch_end(outputs)
         metrics_dict = self.test_metrics.compute()
         self.log_dict(metrics_dict)
+        for m_set in list(metrics_dict.keys()):
+            for m in m_set:
+                if not (('mean' in m) or ('quantile' in m)):
+                    metrics_dict.pop(m, None)
         print(metrics_dict)
         self.test_metrics.reset()
 
@@ -153,7 +162,7 @@ def train_lstm_tagger(tagger: LstmTagger, reports: List[Report], target: List[Li
     if caching:
         logs_name += "_caching"
 
-    tb_logger = pl_loggers.TensorBoardLogger(save_dir="lightning_logs/", name=logs_name)
+    tb_logger = pl_loggers.TensorBoardLogger(save_dir="lightning_logs_private/", name=logs_name)
 
     trainer = Trainer(gpus=gpus, callbacks=callbacks, deterministic=True, logger=tb_logger, max_epochs=max_epoch)
 
