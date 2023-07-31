@@ -68,13 +68,12 @@ def eval_models(reports_path, logdir, config_path):
 
         datamodule = ReportsDataModule(reports, target, train_params['batch_size'], train_params['max_len'], model_name)
         logs_name = model_name
-        tb_logger = pl_loggers.TensorBoardLogger(save_dir="./lightning_logs_test/", name=logs_name)
+        tb_logger = pl_loggers.TensorBoardLogger(save_dir="./bs_logs_private/", name=logs_name)
         gpus = 1
 
         caching = "caching" in model_name
         tagger = init_model(config_name, config, caching, reports, target)
-        print(last_model_run)
-        model = TrainingModule(tagger)
+        model = TrainingModule(tagger, logs_save_path = "./bs_logs_private/"  + model_name + '/' + last_model_run.split('/')[-1] + '/')
         cpkt_path = list(glob.glob(os.path.join(last_model_run, "checkpoints", "*")))[-1]
         state_dict = torch.load(cpkt_path, map_location=torch.device('cuda:0'))["state_dict"]
         model.load_state_dict(state_dict)
@@ -93,7 +92,7 @@ def main():
     parser = argparse.ArgumentParser()
     parser.add_argument("--reports_path", type=str)
     parser.add_argument("--logdir", type=str)
-    parser.add_argument("--config_path", type=str, default="/Users/e.poslovskaya/bug_ml_copy_2/bug_ml_copy_2/new/training/config.json")
+    parser.add_argument("--config_path", type=str, default="/home/centos/bug_ml/new/training/config.json")
 
     args = parser.parse_args()
 

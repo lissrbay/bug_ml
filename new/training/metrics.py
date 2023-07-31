@@ -28,6 +28,8 @@ class BootStrapper(Metric):
         raw: bool = False,
         sampling_strategy: str = "poisson",
         prefix: str = '',
+        model_name: str = '',
+        logs_save_path: str = '',
         **kwargs: Any,
     ) -> None:
         super().__init__(**kwargs)
@@ -42,7 +44,7 @@ class BootStrapper(Metric):
         self.targets_vals = []
         self.masks_vals = []
         self.scores_vals = []
-
+        self.logs_save_path = logs_save_path
         self.mean = mean
         self.std = std
         self.quantile = quantile
@@ -51,7 +53,6 @@ class BootStrapper(Metric):
         self.sampling_strategy = sampling_strategy
 
     def update(self, preds: torch.Tensor, target: torch.Tensor, mask: torch.Tensor, scores: torch.Tensor, **kwargs) -> None:
-        #print(preds.shape)
         self.preds_vals.append(preds)
         self.targets_vals.append(target)
         self.masks_vals.append(mask)
@@ -63,15 +64,13 @@ class BootStrapper(Metric):
             bootstraped_ids = np.random.choice(preds.shape[1], preds.shape[1], replace=True)
             bd_preds, bd_targets, bd_masks, bd_scores = (preds[:, bootstraped_ids], target[:, bootstraped_ids], 
             masks[:, bootstraped_ids], scores[:, bootstraped_ids])
-            #print(bd_preds)
-            #print(bd_scores)
+
             for m in self.metrics:
                 m.update(bd_preds, bd_targets, bd_masks, scores=bd_scores)
             computed_vals = torch.stack([m.compute() for m in self.metrics], dim=0)
             for m in self.metrics:
                 m.reset()
             bootstraped_metrics.extend(torch.unsqueeze(computed_vals, dim=0))
-        #print(bootstraped_metrics)
         return torch.cat(bootstraped_metrics, dim=0)
 
     def compute(self) -> Dict[str, Tensor]:
@@ -93,9 +92,18 @@ class BootStrapper(Metric):
             high_q = round(1-self.quantile/2, 3)
             output_dict[self.prefix + f"quantile_{low_q}"] = torch.quantile(computed_vals, self.quantile/2, interpolation='lower')
             output_dict[self.prefix + f"quantile_{high_q}"] = torch.quantile(computed_vals, 1-self.quantile/2, interpolation='lower')
+            import os
+            if not os.path.exists(self.logs_save_path):
+                os.makedirs(self.logs_save_path)
+            torch.save(torch.cat(self.preds_vals, dim=1), self.logs_save_path + 'preds.pt')
+            torch.save(torch.cat(self.targets_vals, dim=1), self.logs_save_path + 'targets_vals.pt')
+            torch.save(torch.cat(self.masks_vals, dim=1), self.logs_save_path + 'masks_vals.pt')
+            torch.save(torch.cat(self.scores_vals, dim=1), self.logs_save_path + 'scores_vals.pt')
 
-        #if self.raw:
-        #output_dict[self.prefix + "/raw"] = computed_vals
+        self.preds_vals = []
+        self.targets_vals = []
+        self.masks_vals = []
+        self.scores_vals = []
         return output_dict
 
 
