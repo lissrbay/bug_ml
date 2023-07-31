@@ -53,7 +53,6 @@ class BootStrapper(Metric):
         self.sampling_strategy = sampling_strategy
 
     def update(self, preds: torch.Tensor, target: torch.Tensor, mask: torch.Tensor, scores: torch.Tensor, **kwargs) -> None:
-        #print(preds.shape)
         self.preds_vals.append(preds)
         self.targets_vals.append(target)
         self.masks_vals.append(mask)
@@ -65,15 +64,13 @@ class BootStrapper(Metric):
             bootstraped_ids = np.random.choice(preds.shape[1], preds.shape[1], replace=True)
             bd_preds, bd_targets, bd_masks, bd_scores = (preds[:, bootstraped_ids], target[:, bootstraped_ids], 
             masks[:, bootstraped_ids], scores[:, bootstraped_ids])
-            #print(bd_preds)
-            #print(bd_scores)
+
             for m in self.metrics:
                 m.update(bd_preds, bd_targets, bd_masks, scores=bd_scores)
             computed_vals = torch.stack([m.compute() for m in self.metrics], dim=0)
             for m in self.metrics:
                 m.reset()
             bootstraped_metrics.extend(torch.unsqueeze(computed_vals, dim=0))
-        #print(bootstraped_metrics)
         return torch.cat(bootstraped_metrics, dim=0)
 
     def compute(self) -> Dict[str, Tensor]:
