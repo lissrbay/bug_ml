@@ -95,10 +95,9 @@ def eval_baseline(reports_path):
     datamodule = ReportsDataModule(reports, target, batch_size=64, max_len=80, label_style="baseline")
     datamodule.setup()
     tb_logger = pl_loggers.TensorBoardLogger(
-        save_dir="./lightning_logs_test/", name="baseline_community")
+        save_dir="./lightning_logs_test/", name=reports_path.replace('/', '_').replace('.', '_'))
     acc = {'accuracy@1': 0, 'accuracy@3': 0, 'accuracy@5': 0}
     preds = []
-    gts = []
     for reports_batch, targets_batch, _ in datamodule.test_dataloader():
         targets_batch = targets_batch.T
         preds.append(targets_batch)
@@ -126,7 +125,7 @@ def eval_baseline(reports_path):
         print("Quantile 0.005:", np.quantile(bd_metrics[k], 0.01/2))
         print("Quantile 0.995:", np.quantile(bd_metrics[k], (1-0.01/2)))
 
-    #tb_logger.log_metrics(acc)
+    tb_logger.log_metrics(acc)
 
 def main():
     parser = argparse.ArgumentParser()
