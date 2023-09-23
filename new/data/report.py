@@ -30,8 +30,8 @@ class Report:
     exceptions: str
     hash: str
     frames: List[Frame]
-    exception_time: int
-    exception_hash: str
+    exception_time: int = 0
+    exception_hash: str = ''
 
     @staticmethod
     def _read_frames_from_base(base_report: Dict):
