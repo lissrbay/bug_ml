@@ -16,23 +16,26 @@ def list_files_in_commit(commit: Commit, repo: Repo) -> Dict[str, List[str]]:
     java_files = defaultdict(list)
     for file in configFiles:
         if file.endswith('.java') or file.endswith('.kt'):
-            java_files[file.split('/')[-1]].append(file)
+            java_files[file.replace('/', '.')].append(file)
 
     return java_files
 
 
 def get_method_path_and_name(frame: Frame) -> Tuple[str, str]:
-    path = frame.meta['method_name']
-    path = path.split('$')[0]
-    path = path.split('.')
-    method = path.pop()
-    path = "/".join(path)
-    return path, method
+    path = frame.meta['method_name'].split(".")
+    filename = frame.meta['file_name'].replace('.java', '').replace('.kt', '')
+    offset = 0
+    for segment in path[::-1]:
+        if segment == filename:
+            break
+        offset += 1
+
+    return '.'.join(path[:-offset]) + '.'
 
 
 def find_file_for_frame(frame: Frame, matching_files: List[str]) -> str:
     for file_path in matching_files:
-        if frame.meta['file_name'] in file_path:
+        if frame.meta['method_name'] in file_path:
             return file_path
 
     return ""
@@ -41,8 +44,9 @@ def find_file_for_frame(frame: Frame, matching_files: List[str]) -> str:
 def add_paths_to_one_report(report: Report, commit_files: Dict[str, List[str]], file_limit: int) -> Report:
     frames_with_paths = []
     for frame in report.frames[:file_limit]:
-        matching_files_for_frame = commit_files[frame.meta['file_name']]
-        frame_path = find_file_for_frame(frame, matching_files_for_frame)
+        short_path = get_method_path_and_name( frame )
+        matching_files_for_frame = [commit_files[j] for j in commit_files.keys() if short_path in j]
+        frame_path = matching_files_for_frame[0] if len(matching_files_for_frame) > 0 else ''
         frame_meta = frame.meta
         frame_meta['path'] = frame_path
         frames_with_paths.append(Frame(frame.code, frame_meta))
