@@ -56,7 +56,7 @@ class EvalModule(TrainingModule):
         self.train_metrics.reset()
 
 
-def eval_models(reports_path, logdir, config_path):
+def eval_models(reports_path, logdir, config_path, is_test=False):
     for dir in glob.glob(logdir + "/*"):
         last_model_run = sorted(list(glob.glob(dir + "/*")))[-1]
         model_name = dir.split("/")[-1]
@@ -77,16 +77,54 @@ def eval_models(reports_path, logdir, config_path):
         cpkt_path = list(glob.glob(os.path.join(last_model_run, "checkpoints", "*")))[-1]
         state_dict = torch.load(cpkt_path, map_location=torch.device('cuda:0'))["state_dict"]
         model.load_state_dict(state_dict)
-        trainer = Trainer(gpus=gpus, callbacks=None, deterministic=True, logger=tb_logger, max_epochs=1)
-        trainer.test(model, datamodule)
+        if is_test:
+            trainer = Trainer(gpus=gpus, callbacks=None, deterministic=True, logger=tb_logger, max_epochs=1)
+            trainer.test(model, datamodule)
+        else:
+            for report_batch in datamodule.test_dataloader():
+                preds = tagger.predict(report_batch)
+                torch.save(preds, model_name + '_preds')
 
+def eval_diff_predictions(reports_path, logdir, config_path):
+    pass
 
-def eval_baseline(reports_path, logdir, config_path):
+def eval_baseline(reports_path):
     reports, target = read_reports(reports_path, "baseline")
-    datamodule = ReportsDataModule(reports, target, 64, 80, "baseline")
-    trainer = Trainer(gpus=gpus, callbacks=None, deterministic=True, logger=tb_logger, max_epochs=1)
-    trainer.test(model, datamodule)
+    datamodule = ReportsDataModule(reports, target, batch_size=64, max_len=80, label_style="baseline")
+    datamodule.setup()
+    tb_logger = pl_loggers.TensorBoardLogger(
+        save_dir="./lightning_logs_test/", name="baseline_community")
+    acc = {'accuracy@1': 0, 'accuracy@3': 0, 'accuracy@5': 0}
+    preds = []
+    gts = []
+    for reports_batch, targets_batch, _ in datamodule.test_dataloader():
+        targets_batch = targets_batch.T
+        preds.append(targets_batch)
+    preds = torch.cat(preds, dim=0)
+    bd_metrics = defaultdict(list)
+    for _ in range(100):
+        bootstraped_ids = np.random.choice(preds.shape[0], preds.shape[0], replace=True)
+        targets_batch = preds[bootstraped_ids, :]
+        acc = {'accuracy@1': 0, 'accuracy@3': 0, 'accuracy@5': 0}
+        c = 0
 
+        for i in acc.keys():
+            top_k = int(i.split("@")[1])
+            for j, t in enumerate(targets_batch):
+                #r_t = [frame.meta['label'] for frame in r.frames]
+                #print(t.shape)
+                if sum(t[:top_k]) > 0:
+                    acc[i] += 1#int(sum(t[:top_k]))
+        c += len(preds)
+        for k in acc.keys():
+            bd_metrics[k].append(acc[k] / c)
+
+    for k in acc.keys():
+        print("Mean:", np.mean(bd_metrics[k]))
+        print("Quantile 0.005:", np.quantile(bd_metrics[k], 0.01/2))
+        print("Quantile 0.995:", np.quantile(bd_metrics[k], (1-0.01/2)))
+
+    #tb_logger.log_metrics(acc)
 
 def main():
     parser = argparse.ArgumentParser()
