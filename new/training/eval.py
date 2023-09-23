@@ -16,7 +16,7 @@ from new.training.torch_training import TrainingModule
 from new.training.train import read_reports, init_model
 from pytorch_lightning import loggers as pl_loggers, Trainer
 import pytorch_lightning as pl
-from new.training.metrics import Precision, Recall, TopkAccuracy
+from new.training.metrics import Precision, Recall, TopkAccuracy, BootStrapper
 
 
 class EvalModule(TrainingModule):
