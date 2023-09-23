@@ -114,6 +114,40 @@ class Report:
             exception_time=report_json['ts']
         )
 
+    def dump_to_code_and_stack(self):
+        exceptions = self.exceptions
+        exception_ts = 0
+        hash = self.hash
+
+        stacktrace = []
+        new_frames = []
+        for frame in self.frames:
+            code = frame.code.code
+            authors = list(frame.meta['authors']) if 'authors' in frame.meta else []
+            ts = list([int(i) for i in frame.meta['ts']]) if 'ts' in frame.meta else []
+            method_name = frame.meta['method_name']
+            stacktrace.append(method_name)
+            new_frame = {
+                'method_name': method_name,
+                'code': str(code),
+                'scaffle_label': frame.meta['label'] if 'ground_truth' in frame.meta else -1.0,
+                'label': frame.meta['ground_truth'] if 'ground_truth' in frame.meta else frame.meta['label'],
+                'line': 0 if frame.meta['line'] is None else frame.meta['line'],
+                'path_to_code': frame.meta['path'],
+                'annotations': [{'ts': line_ts, 'author': line_author} for line_ts, line_author in zip(ts, authors)]
+            }
+            new_frames.append(new_frame)
+
+        report_json = {'id': self.id,
+                       'ts': exception_ts,
+                       'exceptions': exceptions,
+                       'hash': hash,
+                       'stacktrace': stacktrace}
+        code_json = {'id': int(self.id),
+                     'stacktrace': new_frames}
+        return code_json, report_json
+
+
     def save_report(self, name: str):
         with open(name, 'wb') as report_io:
             pickle.dump(self, report_io)

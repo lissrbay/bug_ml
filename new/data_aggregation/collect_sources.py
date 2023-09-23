@@ -50,9 +50,11 @@ def extract_method_code(code, method_name):
             bound = line_bounds
     return code, bound
 
+
 def get_file_by_commit(repo: Repo, commit: str, diff_file: str) -> str:
     code = repo.git.show('{}:{}'.format(commit, diff_file))
     return code
+
 
 def find_file_lines(code: str, char_bounds):
     char_lines = []
@@ -67,6 +69,7 @@ def find_file_lines(code: str, char_bounds):
     assert len(code) == len(code)
     return (char_lines[char_bounds[0]], char_lines[char_bounds[1]])
 
+
 def get_method_from_code(code: str, method_name:str):
     method_code, bound = extract_method_code(code, method_name)
     hashed_code = base64.b64encode(method_code.encode('UTF-8'))
@@ -76,16 +79,19 @@ def get_method_from_code(code: str, method_name:str):
 def get_sources_for_report(repo: Repo, report: Report, commit: str, file_limit: int) -> Report:
     frames_with_codes = []
     for frame in report.frames[:file_limit]:
+        new_frame = Frame(Code(begin=0, end=0, code=''), frame.meta)
         if frame.meta['path'] != '':
             diff_file = frame.meta['path']
             try:
                 hashed_code = get_file_by_commit(repo, commit + "~1", diff_file)
                 frame_code = get_method_from_code(hashed_code, frame.meta['method_name'])
-                frames_with_codes.append(Frame(frame_code, frame.meta))
+                new_frame = Frame(frame_code, frame.meta)
+                frames_with_codes.append(new_frame)
             except Exception:
                 print(report.id, frame.meta['file_name'])
+                frames_with_codes.append(new_frame)
         else:
-            frames_with_codes.append(frame)
+            frames_with_codes.append(new_frame)
 
     return Report(report.id, report.exceptions, report.hash, frames_with_codes)
 
@@ -96,6 +102,7 @@ def collect_sources_for_all_reports(repo: Repo, path_to_reports: str, file_limit
         path_to_file = os.path.join(path_to_reports, file_name)
         report = Report.load_report(path_to_file)
         if report.hash == "":
+            print("No hash for report:", report.id)
             continue
 
         report = get_sources_for_report(repo, report, report.hash, file_limit)
