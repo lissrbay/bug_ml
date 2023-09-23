@@ -135,7 +135,7 @@ def main():
     parser.add_argument("--config_path", type=str, default="/home/centos/bug_ml/new/training/config.json")
 
     args = parser.parse_args()
-
+    eval_baseline(args.reports_path)
     eval_models(args.reports_path, args.logdir, args.config_path)
 
 
