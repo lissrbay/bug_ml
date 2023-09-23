@@ -1,5 +1,7 @@
 import os
-import sys 
+import sys
+from collections import defaultdict
+
 sys.path.insert(0, './../../')
 import torch
 from torchmetrics import MetricCollection
@@ -9,7 +11,7 @@ from new.training.data import ReportsDataModule
 import argparse
 import glob
 import json
-
+import numpy as np
 from new.training.torch_training import TrainingModule
 from new.training.train import read_reports, init_model
 from pytorch_lightning import loggers as pl_loggers, Trainer
