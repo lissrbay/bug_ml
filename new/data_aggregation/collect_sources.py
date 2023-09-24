@@ -1,4 +1,5 @@
 import argparse
+import json
 import os
 import re
 import base64
@@ -80,17 +81,18 @@ def get_sources_for_report(repo: Repo, report: Report, commit: str, file_limit: 
     frames_with_codes = []
     for frame in report.frames[:file_limit]:
         new_frame = Frame(Code(begin=0, end=0, code=''), frame.meta)
-        if frame.meta['path'] != '':
-            diff_file = frame.meta['path']
+        if frame.meta['path'] != '' and ('/' in frame.meta['path'][0]):
+            diff_file = frame.meta['path'][0]
             try:
                 hashed_code = get_file_by_commit(repo, commit + "~1", diff_file)
                 frame_code = get_method_from_code(hashed_code, frame.meta['method_name'])
                 new_frame = Frame(frame_code, frame.meta)
                 frames_with_codes.append(new_frame)
-            except Exception:
-                print(report.id, frame.meta['file_name'])
+            except Exception as e:
+                print(report.id, frame.meta['file_name'], frame.meta['path'])
                 frames_with_codes.append(new_frame)
         else:
+            new_frame.meta['path'] = ''
             frames_with_codes.append(new_frame)
 
     return Report(report.id, report.exceptions, report.hash, frames_with_codes)

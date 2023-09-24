@@ -83,12 +83,32 @@ def eval_models(reports_path, logdir, config_path, is_test=False):
             trainer = Trainer(gpus=gpus, callbacks=None, deterministic=True, logger=tb_logger, max_epochs=1)
             trainer.test(model, datamodule)
         else:
+            preds_batch = []
+            preds_lens = []
             for report_batch in datamodule.test_dataloader():
-                preds = tagger.predict(report_batch)
-                torch.save(preds, model_name + '_preds')
+                preds_batch.append(tagger.predict(report_batch))
+                preds_lens.append(len(report_batch))
+
+            torch.save(torch.cat(preds_batch, 0), model_name + '_preds')
+            torch.save(torch.LongTensor(preds_lens), 'preds_lens')
 
 def eval_diff_predictions(reports_path, logdir, config_path):
-    pass
+    models_preds = {}
+    for dir in glob.glob(logdir + "/*"):
+        model_name = dir.split("/")[-1]
+
+        models_preds[model_name] = torch.load(model_name + '_preds')
+
+    our_best_model = ''
+    our_best_model_preds = models_preds[our_best_model]
+    split_on_batches = torch.load('preds_lens')
+    for model_name, model_preds in models_preds.items():
+        if model_name != our_best_model:
+            for our_best_model_pred, model_pred in zip(our_best_model_preds, model_preds):
+
+
+
+
 
 def eval_baseline(reports_path):
     reports, target = read_reports(reports_path, "baseline")
